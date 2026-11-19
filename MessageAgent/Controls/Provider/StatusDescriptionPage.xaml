@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<modal:AnimatedModalPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:modal="clr-namespace:MessageAgent.Controls.Provider.Abstract"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="MessageAgent.Controls.Provider.StatusDescriptionPage"
+    BackgroundColor="Transparent"
+    Shell.NavBarIsVisible="False">
+
+    <Grid
+        x:Name="Overlay"
+        BackgroundColor="#99000000"
+        RowDefinitions="*,Auto"
+        Opacity="0">
+
+        <BoxView
+            Grid.RowSpan="2"
+            Color="Transparent">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnOverlayTapped" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <Border
+            x:Name="BottomSheet"
+            Grid.Row="1"
+            Padding="22,18,22,28"
+            BackgroundColor="{AppThemeBinding Light=White, Dark=#252525}"
+            StrokeThickness="0"
+            VerticalOptions="End"
+            TranslationY="500">
+
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="22,22,0,0" />
+            </Border.StrokeShape>
+
+            <VerticalStackLayout Spacing="12">
+                <BoxView
+                    WidthRequest="38"
+                    HeightRequest="4"
+                    CornerRadius="2"
+                    Color="{AppThemeBinding Light=#CCCCCC, Dark=#666666}"
+                    HorizontalOptions="Center" />
+
+                <Label
+                    x:Name="TitleLabel"
+                    Text="{Binding DescriptionTitle}"
+                    FontSize="17"
+                    FontAttributes="Bold"
+                    TextColor="{AppThemeBinding Light=#202020, Dark=White}" />
+
+                <Label
+                    x:Name="DescriptionLabel"
+                    Text="{Binding DescriptionText}"
+                    FontSize="14"
+                    LineBreakMode="WordWrap"
+                    TextColor="{AppThemeBinding Light=#404040, Dark=#DDDDDD}" />
+
+                <Button
+                    Text="Закрыть"
+                    HorizontalOptions="End"
+                    Clicked="OnCloseClicked" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</modal:AnimatedModalPage>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
+    xmlns:views="clr-namespace:MessageAgent.Controls.Provider"
+    xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
+    xmlns:converters="clr-namespace:MessageAgent.Converters"
+    x:Class="MessageAgent.Controls.Provider.MessageProvider"
+    x:Name="Root"
+    SizeChanged="UpdatePresentationOnSizeChanged">
+
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <converters:MessageTypeColorConverter x:Key="AccentColorConverter" />
+            <converters:MessageTypeColorConverter x:Key="BackgroundColorConverter" />
+            <converters:MessageTypeToLottieModifiersConverter x:Key="LottieModifiersConverter" />
+            <converters:MessageTitleConverter x:Key="MessageTitleConverter" />
+            <converters:ReadStateConverter x:Key="ReadStateConverter" />
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <Grid ColumnDefinitions="36,*" ColumnSpacing="6">
+        <controls:LottieView
+            x:Name="LottieProvider"
+            Grid.Column="0"
+            Source="Lotties/circleLable.json"
+            JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
+            ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
+            Modifiers="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource LottieModifiersConverter}}"
+            IsPlaying="False"
+            IsLooping="False"
+            HeightRequest="32"
+            WidthRequest="32"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            AnimationLoaded="LottieProviderOnAnimationLoaded"
+            AnimationCompleted="LottieProviderOnAnimationCompleted">
+            <controls:LottieView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="LottieProviderOnTapped" />
+                <TapGestureRecognizer NumberOfTapsRequired="2" Tapped="LottieProviderOnDoubleTapped" />
+            </controls:LottieView.GestureRecognizers>
+        </controls:LottieView>
+
+        <Border
+            x:Name="BrMessage"
+            Grid.Column="1"
+            Padding="7,4"
+            Margin="2,0,0,0"
+            Stroke="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource AccentColorConverter}}"
+            StrokeThickness="1"
+            BackgroundColor="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource BackgroundColorConverter}, ConverterParameter=Background}"
+            VerticalOptions="Center"
+            IsVisible="False"
+            SizeChanged="UpdatePresentationOnSizeChanged">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="10" />
+            </Border.StrokeShape>
+
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+                <Image
+                    Grid.Column="0"
+                    WidthRequest="15"
+                    HeightRequest="15"
+                    Margin="0,0,3,0"
+                    Aspect="AspectFit"
+                    Source="{Binding Message.IsRead, Source={x:Reference Root}, Converter={StaticResource ReadStateConverter}, ConverterParameter=Image}">  
+                    <Image.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="MessageLabelOnTapped" />
+                    </Image.GestureRecognizers>
+                </Image>
+
+                <Label
+                    x:Name="TitleLabel"
+                    Grid.Column="1"
+                    TextColor="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource AccentColorConverter}}"
+                    FontSize="12"
+                    LineBreakMode="TailTruncation"
+                    MaxLines="1"
+                    MinimumWidthRequest="24"
+                    HorizontalOptions="Fill"
+                    VerticalOptions="Center"
+                    SizeChanged="UpdatePresentationOnSizeChanged">
+                    <Label.Text>
+                        <MultiBinding Converter="{StaticResource MessageTitleConverter}">
+                            <Binding Path="Message.Title" Source="{x:Reference Root}" />
+                            <Binding Path="MaxTitleLength" Source="{x:Reference Root}" />
+                        </MultiBinding>
+                    </Label.Text>
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="MessageLabelOnTapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <HorizontalStackLayout
+                    x:Name="StatusIconsPanel"
+                    Grid.Column="2"
+                    Spacing="3"
+                    VerticalOptions="Center">
+                    <HorizontalStackLayout
+                        Spacing="3"
+                        BindableLayout.ItemsSource="{Binding VisibleStatuses, Source={x:Reference Root}}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <views:StatusValueView
+                                    Status="{Binding Status}"
+                                    ShowTitleOverride="{Binding ShowTitle}"
+                                    MessageAccentColor="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource AccentColorConverter}}">
+                                    <views:StatusValueView.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="MessageLabelOnTapped" />
+                                    </views:StatusValueView.GestureRecognizers>
+                                </views:StatusValueView>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </HorizontalStackLayout>
+                    <statusViews:StatusActionButton
+                        x:Name="StatusMoreButton"
+                        Text="..."
+                        ToolTipText="Все статусы"
+                        IsVisible="{Binding HasStatusOverflow, Source={x:Reference Root}}"
+                        Clicked="StatusMoreButtonOnClicked" />
+                </HorizontalStackLayout>
+            </Grid>
+
+        </Border>
+    </Grid>
+</ContentView>

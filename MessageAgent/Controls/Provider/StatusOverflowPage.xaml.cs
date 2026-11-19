@@ -1,0 +1,114 @@
+using LottieAgent.Interfaces;
+using LottieAgent.Models;
+using MessageAgent.Controls.Provider.Abstract;
+using MessageAgent.Core.Models;
+using MessageAgent.Services;
+using MessageAgent.Services.Interactions;
+
+namespace MessageAgent.Controls.Provider;
+
+/// <summary>
+/// Transparent context popup anchored to the overflow action in the compact message label.
+/// </summary>
+public partial class StatusOverflowPage : AnimatedModalPage
+{
+    private const double PopupMargin = 12;
+    private const double DesiredPopupWidth = 340;
+    private const double DesiredPopupHeight = 320;
+
+    private readonly Rect anchorBounds;
+    private readonly LottiePlaybackInteraction closeAnimationInteraction;
+
+    public IReadOnlyList<Status> Statuses { get; }
+    public Color AccentColor { get; }
+    public Color PanelBackgroundColor { get; }
+    public Color ForegroundColor { get; }
+
+    public StatusOverflowPage(IEnumerable<Status> statuses, Color accentColor, Rect anchorBounds)
+    {
+        ArgumentNullException.ThrowIfNull(statuses);
+
+        Statuses = statuses.ToList();
+        AccentColor = accentColor;
+        this.anchorBounds = anchorBounds;
+
+        bool dark = Application.Current?.RequestedTheme == AppTheme.Dark;
+        PanelBackgroundColor = dark ? Color.FromRgb(34, 37, 43) : Color.FromRgb(250, 250, 248);
+        ForegroundColor = dark ? Color.FromRgb(242, 244, 247) : Color.FromRgb(30, 32, 36);
+
+        InitializeComponent();
+        BindingContext = this;
+
+        CloseAnimation.JsonLoader = MauiServiceProvider.GetRequiredService<ILottieJsonLoader>();
+        CloseAnimation.ModifierProcessor = MauiServiceProvider.GetRequiredService<ILottieModifierProcessor>();
+        CloseAnimation.Modifiers = new LottieModifierCollection()
+            .SetColor("Fill", ForegroundColor);
+
+        closeAnimationInteraction = new LottiePlaybackInteraction(CloseAnimation, CloseButton);
+
+        SizeChanged += OnPopupSizeChanged;
+        Overlay.SizeChanged += OnPopupSizeChanged;
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        await Task.Delay(16);
+        PositionPopup();
+        await Task.WhenAll(
+            PopupPanel.FadeToAsync(1, 140, Easing.CubicOut),
+            PopupPanel.ScaleToAsync(1, 160, Easing.CubicOut));
+    }
+
+    private void OnPopupSizeChanged(object? sender, EventArgs e) => PositionPopup();
+
+    private void PositionPopup()
+    {
+        double pageWidth = Overlay.Width > 0 ? Overlay.Width : Width;
+        double pageHeight = Overlay.Height > 0 ? Overlay.Height : Height;
+
+        if (pageWidth <= 0 || pageHeight <= 0) return;
+
+        double popupWidth = Math.Min(DesiredPopupWidth, Math.Max(120, pageWidth - PopupMargin * 2));
+        double popupHeight = Math.Min(DesiredPopupHeight, Math.Max(140, pageHeight - PopupMargin * 2));
+
+        PopupPanel.WidthRequest = popupWidth;
+        PopupPanel.HeightRequest = popupHeight;
+        double x = anchorBounds.Right - popupWidth;
+
+        if (x < PopupMargin) x = anchorBounds.Left;
+
+        x = Math.Clamp(x, PopupMargin, Math.Max(PopupMargin, pageWidth - popupWidth - PopupMargin));
+        double y = anchorBounds.Bottom + 6;
+
+        if (y + popupHeight > pageHeight - PopupMargin) y = anchorBounds.Top - popupHeight - 6;
+
+        y = Math.Clamp(y, PopupMargin, Math.Max(PopupMargin, pageHeight - popupHeight - PopupMargin));
+
+        AbsoluteLayout.SetLayoutBounds(PopupPanel, new Rect(x, y, popupWidth, popupHeight));
+    }
+
+    private void CloseAnimationOnLoaded(object? sender, EventArgs e)
+    {
+        CloseAnimation.IsPlaying = false;
+        CloseAnimation.Progress = 1;
+        CloseAnimation.IsLooping = closeAnimationInteraction.IsActive;
+
+        if (closeAnimationInteraction.IsActive) CloseAnimation.Play();
+    }
+
+    private async void BackdropOnTapped(object? sender, TappedEventArgs e) => await CloseAsync();
+
+    private async void CloseButtonOnClicked(object? sender, EventArgs e) => await CloseAsync();
+
+    protected override void OnDisappearing()
+    {
+        closeAnimationInteraction.Dispose();
+        base.OnDisappearing();
+    }
+
+    protected override Task AnimateOutAsync() => Task.WhenAll(
+        PopupPanel.FadeToAsync(0, 90, Easing.CubicIn),
+        PopupPanel.ScaleToAsync(0.97, 110, Easing.CubicIn));
+}

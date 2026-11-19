@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<modal:AnimatedModalPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:modal="clr-namespace:MessageAgent.Controls.Provider.Abstract"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
+    xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
+    x:Class="MessageAgent.Controls.Provider.StatusOverflowPage"
+    x:Name="Root"
+    BackgroundColor="Transparent"
+    Title="Все статусы">
+
+    <AbsoluteLayout
+        x:Name="Overlay"
+        BackgroundColor="Transparent"
+        HorizontalOptions="Fill"
+        VerticalOptions="Fill">
+        <BoxView
+            Color="Transparent"
+            AbsoluteLayout.LayoutBounds="0,0,1,1"
+            AbsoluteLayout.LayoutFlags="All">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="BackdropOnTapped" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <Border
+            x:Name="PopupPanel"
+            Padding="14"
+            WidthRequest="340"
+            HeightRequest="320"
+            BackgroundColor="{Binding PanelBackgroundColor}"
+            Stroke="{Binding AccentColor}"
+            StrokeThickness="1.5"
+            Opacity="0"
+            Scale="0.96">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="12" />
+            </Border.StrokeShape>
+
+            <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label
+                        Text="Все статусы"
+                        FontSize="15"
+                        FontAttributes="Bold"
+                        TextColor="{Binding ForegroundColor}"
+                        VerticalOptions="Center" />
+                    <Border
+                        x:Name="CloseButton"
+                        Grid.Column="1"
+                        WidthRequest="30"
+                        HeightRequest="30"
+                        Padding="2"
+                        BackgroundColor="Transparent"
+                        StrokeThickness="0"
+                        HorizontalOptions="End"
+                        VerticalOptions="Center">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="CloseButtonOnClicked" />
+                        </Border.GestureRecognizers>
+                        <lottie:LottieView
+                            x:Name="CloseAnimation"
+                            Source="Lotties/close.json"
+                            WidthRequest="16"
+                            HeightRequest="16"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"
+                            Progress="1"
+                            IsPlaying="False"
+                            IsLooping="False"
+                            AnimationLoaded="CloseAnimationOnLoaded"
+                            BackgroundColor="Transparent" />
+                    </Border>
+                </Grid>
+
+                <ScrollView Grid.Row="1" VerticalOptions="Fill">
+                    <statusViews:StatusGridView
+                        Items="{Binding Statuses}"
+                        AccentColor="{Binding AccentColor}"
+                        IsPaged="False"
+                        HorizontalOptions="Fill" />
+                </ScrollView>
+            </Grid>
+        </Border>
+    </AbsoluteLayout>
+</modal:AnimatedModalPage>

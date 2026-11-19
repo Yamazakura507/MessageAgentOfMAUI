@@ -1,0 +1,260 @@
+using LottieAgent.Interfaces;
+using LottieAgent.Models;
+using MessageAgent.Services;
+using MessageAgent.Services.Actions;
+using MessageAgent.Services.Extensions;
+using MessageAgent.Services.Interactions;
+using MessageAgent.Services.Models;
+using System.Diagnostics;
+
+namespace MessageAgent.Controls.Provider.StatusMessage;
+
+/// <summary>
+/// Compact action badge used for the status overflow and status-grid paging actions.
+/// </summary>
+public partial class StatusActionButton : ContentView
+{
+    private static readonly TimeSpan LongPressDuration = TimeSpan.FromMilliseconds(650);
+    private readonly Color actionColor = Color.FromHsla(Random.Shared.NextDouble(), 0.72, 0.45);
+    private StatusActionPalette actionPalette;
+    private readonly LottiePlaybackInteraction animationInteraction;
+    private readonly NativeLongPressGesture longPressGesture;
+
+    private bool ignoreNextTap;
+    private CancellationTokenSource? pendingTap;
+    private DateTime lastTapUtc = DateTime.MinValue;
+    private DateTime lastLongPressUtc = DateTime.MinValue;
+
+    public event EventHandler? Clicked;
+    public event EventHandler? DoubleOrLongPressed;
+
+    public static readonly BindableProperty TextProperty =
+        BindableProperty.Create(nameof(Text), typeof(string), typeof(StatusActionButton), "...",
+            propertyChanged: OnTextChanged);
+
+    public static readonly BindableProperty ToolTipTextProperty =
+        BindableProperty.Create(nameof(ToolTipText), typeof(string), typeof(StatusActionButton),
+            default(string), propertyChanged: OnToolTipTextChanged);
+
+    public static readonly BindableProperty AnimationSourceProperty =
+        BindableProperty.Create(nameof(AnimationSource), typeof(string), typeof(StatusActionButton),
+            default(string), propertyChanged: OnAnimationSourceChanged);
+
+    public string Text
+    {
+        get => (string)GetValue(TextProperty);
+        set => SetValue(TextProperty, value);
+    }
+
+    /// <summary>
+    /// Tooltip shown by desktop platforms when the pointer rests over the action.
+    /// </summary>
+    public string? ToolTipText
+    {
+        get => (string?)GetValue(ToolTipTextProperty);
+        set => SetValue(ToolTipTextProperty, value);
+    }
+
+    /// <summary>
+    /// Optional Lottie asset used instead of the action text.
+    /// </summary>
+    public string? AnimationSource
+    {
+        get => (string?)GetValue(AnimationSourceProperty);
+        set => SetValue(AnimationSourceProperty, value);
+    }
+
+    public StatusActionButton()
+    {
+        InitializeComponent();
+
+        ActionAnimation.JsonLoader = MauiServiceProvider.GetRequiredService<ILottieJsonLoader>();
+        ActionAnimation.ModifierProcessor = MauiServiceProvider.GetRequiredService<ILottieModifierProcessor>();
+        ActionAnimation.AnimationLoaded += AnimationOnLoaded;
+        ActionAnimation.AnimationFailed += exception => Debug.WriteLine(exception);
+        ActionAnimation.ModifierNotApplied += target => Debug.WriteLine($"Lottie modifier target not found: {target}");
+
+        animationInteraction = new LottiePlaybackInteraction(ActionAnimation);
+        longPressGesture = new NativeLongPressGesture(ActionBorder, OnNativeLongPress, LongPressDuration, cancelsTouchesInView: false);
+
+        ActionBorder.HandlerChanged += (_, _) =>
+        {
+            ApplyToolTip();
+            ApplyAnimationSurface();
+        };
+        ActionAnimation.HandlerChanged += (_, _) => ApplyAnimationSurface();
+
+        ApplyStyle();
+    }
+
+    private static void OnTextChanged(BindableObject bindable, object oldValue, object newValue) => ((StatusActionButton)bindable).ApplyText();
+
+    private static void OnToolTipTextChanged(BindableObject bindable, object oldValue, object newValue) => ((StatusActionButton)bindable).ApplyToolTip();
+
+    private static void OnAnimationSourceChanged(BindableObject bindable, object oldValue, object newValue) => ((StatusActionButton)bindable).ApplyText();
+
+    private void ApplyText()
+    {
+        bool isMoreAction = string.Equals(Text, "...", StringComparison.Ordinal);
+        bool useAnimation = isMoreAction || !string.IsNullOrWhiteSpace(AnimationSource);
+
+        ActionLabel.Text = Text;
+        ActionLabel.IsVisible = !useAnimation;
+        ActionAnimation.IsVisible = useAnimation;
+
+        if (useAnimation) ActionAnimation.Source = AnimationSource ?? "Lotties/more_point.json";
+
+        bool isMinimizeAction = AnimationSource?.EndsWith("minimize.json", StringComparison.OrdinalIgnoreCase) == true;
+
+        ActionAnimation.Modifiers = isMoreAction
+            ? CreateMoreAnimationModifiers()
+            : isMinimizeAction
+                ? CreateMinimizeAnimationModifiers()
+                : new ();
+
+        if (useAnimation)
+        {
+            ActionBorder.Padding = new Thickness(4, 2);
+            ActionBorder.WidthRequest = 34;
+        }
+        else
+        {
+            ActionBorder.Padding = new Thickness(6, 2);
+            ActionBorder.WidthRequest = Math.Max(66, 20 + Text.Length * 5.7);
+        }
+    }
+
+    private LottieModifierCollection CreateMoreAnimationModifiers() => new LottieModifierCollection()
+        .SetColor("Layer 1", actionPalette.FirstCircleColor)
+        .SetColor("Layer 2", actionPalette.SecondCircleColor)
+        .SetColor("Layer 3", actionPalette.ThirdCircleColor);
+
+    private LottieModifierCollection CreateMinimizeAnimationModifiers()
+    {
+        Color borderColor = actionPalette.Surface.BorderColor;
+
+        return new LottieModifierCollection()
+            .SetColor("Layer 2 Outlines", borderColor)
+            .SetColor("Layer 3 Outlines", borderColor)
+            .SetColor("Layer 4 Outlines", borderColor)
+            .SetColor("Layer 5 Outlines", borderColor);
+    }
+
+    private void ApplyStyle()
+    {
+        actionPalette = StatusActionPaletteFactory.Create(actionColor);
+        StatusVisualPalette surface = actionPalette.Surface;
+
+        ActionBorder.Stroke = new SolidColorBrush(surface.BorderColor);
+        ActionBorder.BackgroundColor = surface.BackgroundColor;
+        ActionLabel.TextColor = surface.TextColor;
+
+        ApplyAnimationSurface();
+        ApplyText();
+        ApplyToolTip();
+    }
+
+    private void ApplyAnimationSurface()
+    {
+        Color surface = ActionBorder.BackgroundColor ?? Colors.Transparent;
+
+        AnimationHost.BackgroundColor = surface;
+        ActionAnimation.BackgroundColor = surface;
+
+        ActionAnimation.InvalidateSurface();
+    }
+
+    private void ApplyToolTip()
+    {
+        ToolTipHelper.SetText(this, ToolTipText);
+        ToolTipHelper.SetText(ActionBorder, ToolTipText);
+    }
+
+    private void AnimationOnLoaded(object? sender, EventArgs e)
+    {
+        ApplyAnimationSurface();
+
+        ActionAnimation.IsPlaying = false;
+        ActionAnimation.Progress = 0;
+        ActionAnimation.IsLooping = animationInteraction.IsActive;
+
+        if (animationInteraction.IsActive) ActionAnimation.Play();
+    }
+
+    private void OnNativeLongPress()
+    {
+        ignoreNextTap = true;
+        lastLongPressUtc = DateTime.UtcNow;
+        DoubleOrLongPressed?.Invoke(this, EventArgs.Empty);
+    }
+
+    private async void OnTapped(object? sender, TappedEventArgs e)
+    {
+        if (ignoreNextTap)
+        {
+            bool suppressReleaseTap = DateTime.UtcNow - lastLongPressUtc <= TimeSpan.FromSeconds(1);
+            ignoreNextTap = false;
+
+            if (suppressReleaseTap) return;
+        }
+
+        DateTime now = DateTime.UtcNow;
+
+        if (pendingTap is not null && now - lastTapUtc <= TimeSpan.FromMilliseconds(350))
+        {
+            CancellationTokenSource previousTap = pendingTap;
+            pendingTap = null;
+            lastTapUtc = DateTime.MinValue;
+
+            previousTap.Cancel();
+            previousTap.Dispose();
+            DoubleOrLongPressed?.Invoke(this, EventArgs.Empty);
+
+            return;
+        }
+
+        pendingTap?.Cancel();
+        pendingTap?.Dispose();
+
+        CancellationTokenSource tap = new ();
+        pendingTap = tap;
+        lastTapUtc = now;
+
+        try
+        {
+            await Task.Delay(350, tap.Token);
+
+            if (!tap.IsCancellationRequested && ReferenceEquals(pendingTap, tap))
+            {
+                pendingTap = null;
+                lastTapUtc = DateTime.MinValue;
+                Clicked?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // A second tap or a long press superseded the pending single tap.
+        }
+        finally
+        {
+            tap.Dispose();
+        }
+    }
+
+    protected override void OnParentSet()
+    {
+        base.OnParentSet();
+
+        if (Parent is null)
+        {
+            animationInteraction.SetActive(false);
+            ActionAnimation.IsPlaying = false;
+            ActionAnimation.Progress = 0;
+
+            pendingTap?.Cancel();
+            pendingTap?.Dispose();
+            pendingTap = null;
+            lastTapUtc = DateTime.MinValue;
+        }
+    }
+}

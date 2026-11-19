@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
+    x:Class="MessageAgent.Controls.Provider.StatusMessage.StatusActionButton"
+    x:Name="Root"
+    BackgroundColor="Transparent">
+    <Border
+        x:Name="ActionBorder"
+        Padding="4,2"
+        StrokeThickness="1"
+        HeightRequest="25"
+        HorizontalOptions="Start"
+        VerticalOptions="Center">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="6" />
+        </Border.StrokeShape>
+        <Grid
+            x:Name="AnimationHost"
+            BackgroundColor="Transparent"
+            HorizontalOptions="Center"
+            VerticalOptions="Center">
+            <Label
+                x:Name="ActionLabel"
+                Text="..."
+                FontSize="11"
+                BackgroundColor="Transparent"
+                FontAttributes="Bold"
+                HorizontalTextAlignment="Center"
+                VerticalTextAlignment="Center"
+                LineBreakMode="NoWrap"
+                IsVisible="False" />
+            <lottie:LottieView
+                x:Name="ActionAnimation"
+                Source="Lotties/more_point.json"
+                WidthRequest="24"
+                HeightRequest="18"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                BackgroundColor="Transparent"
+                IsPlaying="False"
+                IsLooping="False"
+                IsVisible="False" />
+        </Grid>
+        <Border.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnTapped" />
+        </Border.GestureRecognizers>
+    </Border>
+</ContentView>

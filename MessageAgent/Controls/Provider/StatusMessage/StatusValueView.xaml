@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
+    x:Class="MessageAgent.Controls.Provider.StatusValueView"
+    x:Name="Root"
+    BackgroundColor="Transparent">
+
+    <Border
+        x:Name="StatusBorder"
+        Padding="3,2"
+        Stroke="#808080"
+        StrokeThickness="1"
+        BackgroundColor="Transparent"
+        HorizontalOptions="Fill"
+        VerticalOptions="Center">
+
+        <Border.StrokeShape>
+            <shapes:RoundRectangle CornerRadius="6" />
+        </Border.StrokeShape>
+
+        <Grid
+            x:Name="StatusLayout"
+            BackgroundColor="Transparent"
+            ColumnDefinitions="Auto,*"
+            ColumnSpacing="4"
+            HorizontalOptions="Fill"
+            VerticalOptions="Center">
+
+            <ContentView
+                x:Name="ValueHost"
+                Grid.Column="0"
+                WidthRequest="18"
+                HeightRequest="18"
+                HorizontalOptions="Center"
+                VerticalOptions="Center" />
+
+            <Label
+                x:Name="NameLabel"
+                Grid.Column="1"
+                FontSize="11"
+                LineBreakMode="TailTruncation"
+                MaxLines="1"
+                HorizontalOptions="Fill"
+                VerticalOptions="Center"
+                IsVisible="False" />
+        </Grid>
+    </Border>
+</ContentView>

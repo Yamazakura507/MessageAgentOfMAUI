@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<modal:AnimatedModalPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:modal="clr-namespace:MessageAgent.Controls.Provider.Abstract"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
+    xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
+    xmlns:views="clr-namespace:MessageAgent.Controls"
+    xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
+    xmlns:converters="clr-namespace:MessageAgent.Converters"
+    x:Class="MessageAgent.Controls.Provider.MessageDetailsPage"
+    x:Name="Root"
+    BackgroundColor="Transparent"
+    Title="Message details">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:MessageTypeColorConverter x:Key="AccentColorConverter" />
+            <converters:MessageTypeToDialogColorConverter x:Key="DialogColorConverter" />
+            <converters:MessageTypeToTextConverter x:Key="MessageTypeToTextConverter" />
+            <converters:MessageTypeToLottieModifiersConverter x:Key="LottieModifiersConverter" />
+            <converters:ReadStateConverter x:Key="ReadStateConverter" />
+            <converters:HasTextConverter x:Key="HasTextConverter" />
+            <converters:CollectionCountConverter x:Key="HasItemsConverter" MinimumCount="1" />
+            <converters:CollectionCountConverter x:Key="HasMultipleItemsConverter" MinimumCount="2" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid
+        x:Name="Overlay"
+        Padding="24"
+        BackgroundColor="#96000000"
+        Opacity="0">
+
+        <Border
+            x:Name="DetailsPanel"
+            Padding="20"
+            MaximumWidthRequest="560"
+            MaximumHeightRequest="720"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            BackgroundColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Surface}"
+            Stroke="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
+            StrokeThickness="1.5"
+            Opacity="0"
+            Scale="0.94">
+
+            <Border.StrokeShape>
+                <shapes:RoundRectangle CornerRadius="18" />
+            </Border.StrokeShape>
+
+            <ScrollView>
+                <VerticalStackLayout Spacing="16">
+
+                    <Grid ColumnDefinitions="56,*" ColumnSpacing="12">
+                        <lottie:LottieView
+                            x:Name="MessageIcon"
+                            Grid.Column="0"
+                            WidthRequest="52"
+                            HeightRequest="52"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"
+                            IsPlaying="False"
+                            IsLooping="False"
+                            Progress="1"
+                            AnimationLoaded="MessageIconOnLoaded"
+                            Source="Lotties/circleLable.json"
+                            JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
+                            ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
+                            Modifiers="{Binding Type, Converter={StaticResource LottieModifiersConverter}}" />
+
+                        <Grid
+                            Grid.Column="1"
+                            RowDefinitions="Auto,Auto"
+                            RowSpacing="3"
+                            VerticalOptions="Center">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <Label
+                                    Grid.Column="0"
+                                    Text="{Binding Type, Converter={StaticResource MessageTypeToTextConverter}}"
+                                    TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
+                                    FontSize="12"
+                                    FontAttributes="Bold"
+                                    VerticalOptions="Center" />
+
+                                <HorizontalStackLayout
+                                    Grid.Column="1"
+                                    Spacing="5"
+                                    VerticalOptions="Center">
+                                    <Image
+                                        Source="{Binding IsRead, Converter={StaticResource ReadStateConverter}, ConverterParameter=Image}"
+                                        WidthRequest="16"
+                                        HeightRequest="16"
+                                        Aspect="AspectFit" />
+                                    <Label
+                                        Text="{Binding IsRead, Converter={StaticResource ReadStateConverter}}"
+                                        FontSize="11"
+                                        TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=SecondaryForeground}"
+                                        VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Grid>
+
+                            <Label
+                                Grid.Row="1"
+                                Text="{Binding Title}"
+                                FontSize="20"
+                                FontAttributes="Bold"
+                                TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Foreground}"
+                                LineBreakMode="WordWrap" />
+                        </Grid>
+                    </Grid>
+
+                    <statusViews:StatusGridView
+                        Items="{Binding Status}"
+                        AccentColor="{Binding Type, Converter={StaticResource AccentColorConverter}}"
+                        IsPaged="True"
+                        HorizontalOptions="Fill"
+                        IsVisible="{Binding Status, Converter={StaticResource HasItemsConverter}}" />
+
+                    <Label
+                        Text="{Binding Description}"
+                        FontSize="14"
+                        TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Foreground}"
+                        LineBreakMode="WordWrap"
+                        IsVisible="{Binding Description, Converter={StaticResource HasTextConverter}}" />
+
+                                        <CarouselView
+                        ItemsSource="{Binding Images}"
+                        HeightRequest="220"
+                        HorizontalOptions="Fill"
+                        IsVisible="{Binding Images, Converter={StaticResource HasItemsConverter}}"
+                        IndicatorView="{x:Reference ImagesIndicator}">
+                        <CarouselView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Image
+                                        Source="{Binding .}"
+                                        Aspect="AspectFit"
+                                        HorizontalOptions="Fill"
+                                        VerticalOptions="Fill" />
+                                </Grid>
+                            </DataTemplate>
+                        </CarouselView.ItemTemplate>
+                    </CarouselView>
+
+                    <IndicatorView
+                        x:Name="ImagesIndicator"
+                        HorizontalOptions="Center"
+                        IndicatorColor="LightGray"
+                        SelectedIndicatorColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
+                        IsVisible="{Binding Images, Converter={StaticResource HasMultipleItemsConverter}}" />
+
+                    <Border
+                        x:Name="CloseButton"
+                        Padding="14,9"
+                        BackgroundColor="{Binding Type, Converter={StaticResource AccentColorConverter}}"
+                        StrokeThickness="0"
+                        HorizontalOptions="End">
+                        <Border.StrokeShape>
+                            <shapes:RoundRectangle CornerRadius="10" />
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="CloseButtonOnClicked" />
+                        </Border.GestureRecognizers>
+                        <Grid
+                            ColumnDefinitions="26,Auto"
+                            ColumnSpacing="8"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center">
+                            <lottie:LottieView
+                                x:Name="CloseAnimation"
+                                Grid.Column="0"
+                                Source="Lotties/close.json"
+                                Progress="1"
+                                AnimationLoaded="CloseAnimationOnLoaded"
+                                JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
+                                ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
+                                WidthRequest="24"
+                                HeightRequest="24"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center"
+                                IsPlaying="False"
+                                IsLooping="False"
+                                BackgroundColor="Transparent" />
+                            <Label
+                                Grid.Column="1"
+                                Text="Закрыть"
+                                FontSize="14"
+                                TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=AccentContent}"
+                                VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Border>
+    </Grid>
+</modal:AnimatedModalPage>
