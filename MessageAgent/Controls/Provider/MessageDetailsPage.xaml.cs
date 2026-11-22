@@ -28,16 +28,6 @@ public partial class MessageDetailsPage : AnimatedModalPage
     public ILottieModifierProcessor ModifierProcessor { get; }
 
     /// <summary>
-    /// Gets the message-accent modifiers applied to the left carousel arrow.
-    /// </summary>
-    public LottieModifierCollection LeftArrowModifiers { get; }
-
-    /// <summary>
-    /// Gets the message-accent and mirror modifiers applied to the right carousel arrow.
-    /// </summary>
-    public LottieModifierCollection RightArrowModifiers { get; }
-
-    /// <summary>
     /// Gets the contrast-adjusted accent color used for dialog details and links.
     /// </summary>
     public Color DialogAccentColor { get; }
@@ -63,10 +53,11 @@ public partial class MessageDetailsPage : AnimatedModalPage
         this.visualValueViewFactory = visualValueViewFactory ?? throw new ArgumentNullException(nameof(visualValueViewFactory));
 
         DialogAccentColor = message.Type.GetDialogAccent();
-        LeftArrowModifiers = new LottieModifierCollection().SetColor("Stroke 1", DialogAccentColor);
-        RightArrowModifiers = new LottieModifierCollection().SetColor("Stroke 1", DialogAccentColor).SetScale("scroll_up", new Point(-1, 1));
 
         InitializeComponent();
+
+        ((LottieModifierCollection)Resources["LeftArrowModifiers"]).SetColor("Stroke 1", DialogAccentColor);
+        ((LottieModifierCollection)Resources["RightArrowModifiers"]).SetColor("Stroke 1", DialogAccentColor);
 
         BindingContext = message;
 
@@ -118,6 +109,7 @@ public partial class MessageDetailsPage : AnimatedModalPage
     private void NextImageOnTapped(object? sender, TappedEventArgs e)
     {
         int count = (BindingContext as Message)?.Images.Count ?? 0;
+
         if (ImagesCarousel.Position < count - 1) ImagesCarousel.Position++;
     }
 
@@ -168,6 +160,7 @@ public partial class MessageDetailsPage : AnimatedModalPage
         };
 
         SemanticProperties.SetDescription(favicon, link.Title ?? uri.Host);
+
         host.Content = favicon;
     }
 

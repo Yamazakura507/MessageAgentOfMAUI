@@ -6,6 +6,7 @@
     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
     xmlns:lottieModels="clr-namespace:LottieAgent.Models;assembly=LottieAgent"
+    xmlns:lottieModifiers="clr-namespace:LottieAgent.Models.Modifier;assembly=LottieAgent"
     xmlns:views="clr-namespace:MessageAgent.Controls"
     xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
     xmlns:converters="clr-namespace:MessageAgent.Converters"
@@ -25,6 +26,13 @@
             <converters:HasTextConverter x:Key="HasTextConverter" />
             <converters:CollectionCountConverter x:Key="HasItemsConverter" MinimumCount="1" />
             <converters:CollectionCountConverter x:Key="HasMultipleItemsConverter" MinimumCount="2" />
+            <lottieModels:LottieModifierCollection x:Key="LeftArrowModifiers" />
+            <lottieModels:LottieModifierCollection x:Key="RightArrowModifiers">
+                <lottieModifiers:LottieTransformModifier
+                    TargetName="scroll_up"
+                    Property="Scale"
+                    Vector="-1,1" />
+            </lottieModels:LottieModifierCollection>
         </ResourceDictionary>
     </ContentPage.Resources>
 
@@ -106,7 +114,6 @@
                         LineBreakMode="WordWrap"
                         IsVisible="{Binding Description, Converter={StaticResource HasTextConverter}}" />
 
-                    <!-- Links are deliberately placed after the description and before attachments. -->
                     <CollectionView
                         ItemsSource="{Binding Links}"
                         SelectionMode="None"
@@ -160,7 +167,7 @@
                             Progress="1" IsPlaying="False" IsLooping="False"
                             JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
                             ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
-                            Modifiers="{Binding LeftArrowModifiers, Source={x:Reference Root}}">
+                            Modifiers="{StaticResource LeftArrowModifiers}">
                             <lottie:LottieView.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="PreviousImageOnTapped" />
                             </lottie:LottieView.GestureRecognizers>
@@ -192,7 +199,7 @@
                             Progress="1" IsPlaying="False" IsLooping="False"
                             JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
                             ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
-                            Modifiers="{Binding RightArrowModifiers, Source={x:Reference Root}}">
+                            Modifiers="{StaticResource RightArrowModifiers}">
                             <lottie:LottieView.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="NextImageOnTapped" />
                             </lottie:LottieView.GestureRecognizers>

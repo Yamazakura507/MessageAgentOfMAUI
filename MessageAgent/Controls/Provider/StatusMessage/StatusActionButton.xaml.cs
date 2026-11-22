@@ -80,6 +80,26 @@ public partial class StatusActionButton : ContentView
     }
 
     /// <summary>
+    /// Gets whether the action is currently represented by a Lottie animation.
+    /// </summary>
+    public bool IsAnimationVisible => string.Equals(Text, "...", StringComparison.Ordinal) || !string.IsNullOrWhiteSpace(AnimationSource);
+
+    /// <summary>
+    /// Gets whether the action is currently represented by its text label.
+    /// </summary>
+    public bool IsTextVisible => !IsAnimationVisible;
+
+    /// <summary>
+    /// Gets the effective Lottie source used when the action is animated.
+    /// </summary>
+    public string EffectiveAnimationSource => AnimationSource ?? "Lotties/more_point.json";
+
+    /// <summary>
+    /// Gets the modifiers associated with the current action animation.
+    /// </summary>
+    public LottieModifierCollection AnimationModifiers { get; private set; } = new();
+
+    /// <summary>
     /// Initializes the action badge and its native interaction handlers.
     /// </summary>
     public StatusActionButton()
@@ -116,19 +136,18 @@ public partial class StatusActionButton : ContentView
         bool isMoreAction = string.Equals(Text, "...", StringComparison.Ordinal);
         bool useAnimation = isMoreAction || !string.IsNullOrWhiteSpace(AnimationSource);
 
-        ActionLabel.Text = Text;
-        ActionLabel.IsVisible = !useAnimation;
-        ActionAnimation.IsVisible = useAnimation;
-
-        if (useAnimation) ActionAnimation.Source = AnimationSource ?? "Lotties/more_point.json";
-
         bool isMinimizeAction = AnimationSource?.EndsWith("minimize.json", StringComparison.OrdinalIgnoreCase) == true;
 
-        ActionAnimation.Modifiers = isMoreAction
+        AnimationModifiers = isMoreAction
             ? CreateMoreAnimationModifiers()
             : isMinimizeAction
                 ? CreateMinimizeAnimationModifiers()
                 : new ();
+
+        OnPropertyChanged(nameof(IsAnimationVisible));
+        OnPropertyChanged(nameof(IsTextVisible));
+        OnPropertyChanged(nameof(EffectiveAnimationSource));
+        OnPropertyChanged(nameof(AnimationModifiers));
 
         if (useAnimation)
         {

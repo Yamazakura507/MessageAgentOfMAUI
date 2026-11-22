@@ -59,8 +59,7 @@ public partial class StatusOverflowPage : AnimatedModalPage
 
         CloseAnimation.JsonLoader = MauiServiceProvider.GetRequiredService<ILottieJsonLoader>();
         CloseAnimation.ModifierProcessor = MauiServiceProvider.GetRequiredService<ILottieModifierProcessor>();
-        CloseAnimation.Modifiers = new LottieModifierCollection()
-            .SetColor("Fill", ForegroundColor);
+        CloseAnimation.Modifiers.SetColor("Fill", ForegroundColor);
 
         closeAnimationInteraction = new LottiePlaybackInteraction(CloseAnimation, CloseButton);
 

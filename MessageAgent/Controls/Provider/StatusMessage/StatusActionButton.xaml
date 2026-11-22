@@ -23,17 +23,18 @@
             VerticalOptions="Center">
             <Label
                 x:Name="ActionLabel"
-                Text="..."
+                Text="{Binding Text, Source={x:Reference Root}}"
                 FontSize="11"
                 BackgroundColor="Transparent"
                 FontAttributes="Bold"
                 HorizontalTextAlignment="Center"
                 VerticalTextAlignment="Center"
                 LineBreakMode="NoWrap"
-                IsVisible="False" />
+                IsVisible="{Binding IsTextVisible, Source={x:Reference Root}}" />
             <lottie:LottieView
                 x:Name="ActionAnimation"
-                Source="Lotties/more_point.json"
+                Source="{Binding EffectiveAnimationSource, Source={x:Reference Root}}"
+                Modifiers="{Binding AnimationModifiers, Source={x:Reference Root}}"
                 WidthRequest="24"
                 HeightRequest="18"
                 HorizontalOptions="Center"
@@ -41,7 +42,7 @@
                 BackgroundColor="Transparent"
                 IsPlaying="False"
                 IsLooping="False"
-                IsVisible="False" />
+                IsVisible="{Binding IsAnimationVisible, Source={x:Reference Root}}" />
         </Grid>
         <Border.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnTapped" />
