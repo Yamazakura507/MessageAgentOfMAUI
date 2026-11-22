@@ -22,7 +22,7 @@ public partial class LottieVisualValueView : ContentView
 
         InitializeComponent();
 
-        playbackInteraction = new LottiePlaybackInteraction(Animation);
+        playbackInteraction = new LottiePlaybackInteraction(Animation, restingProgress: value.Progress);
         BindingContext = value;
 
         Animation.JsonLoader = jsonLoader;

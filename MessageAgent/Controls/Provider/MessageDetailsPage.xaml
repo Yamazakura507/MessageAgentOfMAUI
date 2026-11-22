@@ -5,8 +5,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
-    xmlns:lottieModels="clr-namespace:LottieAgent.Models;assembly=LottieAgent"
-    xmlns:lottieModifiers="clr-namespace:LottieAgent.Models.Modifier;assembly=LottieAgent"
     xmlns:views="clr-namespace:MessageAgent.Controls"
     xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
     xmlns:converters="clr-namespace:MessageAgent.Converters"
@@ -27,13 +25,6 @@
             <converters:HasTextConverter x:Key="HasTextConverter" />
             <converters:CollectionCountConverter x:Key="HasItemsConverter" MinimumCount="1" />
             <converters:CollectionCountConverter x:Key="HasMultipleItemsConverter" MinimumCount="2" />
-            <lottieModels:LottieModifierCollection x:Key="LeftArrowModifiers" />
-            <lottieModels:LottieModifierCollection x:Key="RightArrowModifiers">
-                <lottieModifiers:LottieTransformModifier
-                    TargetName="scroll_up"
-                    Property="Scale"
-                    Vector="-1,1" />
-            </lottieModels:LottieModifierCollection>
         </ResourceDictionary>
     </ContentPage.Resources>
 
@@ -165,10 +156,9 @@
                             Source="{Binding ., Converter={StaticResource MessageAgentLottieSourceConverter}, ConverterParameter=MessageAgent.Lotties.Arrow}"
                             WidthRequest="64" HeightRequest="64"
                             HorizontalOptions="Center" VerticalOptions="Center"
-                            Progress="0.6622" IsPlaying="False" IsLooping="False"
+                            IsPlaying="False" IsLooping="False"
                             JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
-                            ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
-                            Modifiers="{StaticResource LeftArrowModifiers}">
+                            ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}">
                             <lottie:LottieView.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="PreviousImageOnTapped" />
                             </lottie:LottieView.GestureRecognizers>
@@ -177,6 +167,8 @@
                         <CarouselView
                             x:Name="ImagesCarousel"
                             Grid.Column="1"
+                            Loop="False"
+                            IsBounceEnabled="False"
                             ItemsSource="{Binding Images}"
                             HorizontalOptions="Fill"
                             VerticalOptions="Fill"
@@ -197,10 +189,9 @@
                             Source="{Binding ., Converter={StaticResource MessageAgentLottieSourceConverter}, ConverterParameter=MessageAgent.Lotties.Arrow}"
                             WidthRequest="64" HeightRequest="64"
                             HorizontalOptions="Center" VerticalOptions="Center"
-                            Progress="0.6622" IsPlaying="False" IsLooping="False"
+                            IsPlaying="False" IsLooping="False"
                             JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
-                            ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
-                            Modifiers="{StaticResource RightArrowModifiers}">
+                            ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}">
                             <lottie:LottieView.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="NextImageOnTapped" />
                             </lottie:LottieView.GestureRecognizers>
@@ -231,10 +222,8 @@
                                 x:Name="CloseAnimation"
                                 Grid.Column="0"
                                 Source="{Binding ., Converter={StaticResource MessageAgentLottieSourceConverter}, ConverterParameter=MessageAgent.Lotties.Close}"
-                                Progress="1"
                                 JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
                                 ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
-                                Modifiers="{Binding Type, Converter={StaticResource LottieModifiersConverter}, ConverterParameter=AccentContent}"
                                 WidthRequest="24" HeightRequest="24"
                                 HorizontalOptions="Center" VerticalOptions="Center"
                                 IsPlaying="False" IsLooping="False"

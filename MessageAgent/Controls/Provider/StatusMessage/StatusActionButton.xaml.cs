@@ -18,6 +18,7 @@ public partial class StatusActionButton : ContentView
     private static readonly TimeSpan LongPressDuration = TimeSpan.FromMilliseconds(650);
     private readonly Color actionColor = Color.FromHsla(Random.Shared.NextDouble(), 0.72, 0.45);
     private StatusActionPalette actionPalette;
+    private MessageAgentLottieSettings animationSettings = new();
     private readonly LottiePlaybackInteraction animationInteraction;
     private readonly NativeLongPressGesture longPressGesture;
 
@@ -93,22 +94,7 @@ public partial class StatusActionButton : ContentView
     /// <summary>
     /// Gets the effective Lottie source used when the action is animated.
     /// </summary>
-    public string EffectiveAnimationSource
-    {
-        get
-        {
-            if (string.IsNullOrWhiteSpace(AnimationSource))
-                return MessageAgentLotties.Get(MessageAgentLottieKeys.More, "Lotties/more_point.json");
-
-            if (AnimationSource.EndsWith("more_point.json", StringComparison.OrdinalIgnoreCase))
-                return MessageAgentLotties.Get(MessageAgentLottieKeys.More, AnimationSource);
-
-            if (AnimationSource.EndsWith("minimize.json", StringComparison.OrdinalIgnoreCase))
-                return MessageAgentLotties.Get(MessageAgentLottieKeys.Minimize, AnimationSource);
-
-            return AnimationSource;
-        }
-    }
+    public string EffectiveAnimationSource => animationSettings.Source ?? AnimationSource ?? "Lotties/more_point.json";
 
     /// <summary>
     /// Gets the modifiers associated with the current action animation.
@@ -128,7 +114,7 @@ public partial class StatusActionButton : ContentView
         ActionAnimation.AnimationFailed += exception => Debug.WriteLine(exception);
         ActionAnimation.ModifierNotApplied += target => Debug.WriteLine($"Lottie modifier target not found: {target}");
 
-        animationInteraction = new LottiePlaybackInteraction(ActionAnimation);
+        animationInteraction = new LottiePlaybackInteraction(ActionAnimation, resetToRestingOnDeactivate: true);
         longPressGesture = new NativeLongPressGesture(ActionBorder, OnNativeLongPress, LongPressDuration, cancelsTouchesInView: false);
 
         ActionBorder.HandlerChanged += (_, _) =>
@@ -153,12 +139,42 @@ public partial class StatusActionButton : ContentView
         bool useAnimation = isMoreAction || !string.IsNullOrWhiteSpace(AnimationSource);
 
         bool isMinimizeAction = AnimationSource?.EndsWith("minimize.json", StringComparison.OrdinalIgnoreCase) == true;
+        bool isMoreAnimation = string.IsNullOrWhiteSpace(AnimationSource)
+            ? isMoreAction
+            : AnimationSource.EndsWith("more_point.json", StringComparison.OrdinalIgnoreCase);
 
-        AnimationModifiers = isMoreAction
-            ? CreateMoreAnimationModifiers()
-            : isMinimizeAction
-                ? CreateMinimizeAnimationModifiers()
-                : new ();
+        if (isMoreAnimation)
+        {
+            animationSettings = MessageAgentLotties.GetSettings(
+                MessageAgentLottieKeys.More,
+                AnimationSource ?? "Lotties/more_point.json",
+                defaultRestingProgress: 0d,
+                defaultModifiers: CreateMoreAnimationModifiers());
+        }
+        else if (isMinimizeAction)
+        {
+            animationSettings = MessageAgentLotties.GetSettings(
+                MessageAgentLottieKeys.Minimize,
+                AnimationSource ?? "Lotties/minimize.json",
+                defaultRestingProgress: 0d,
+                defaultModifiers: CreateMinimizeAnimationModifiers());
+        }
+        else
+        {
+            animationSettings = new MessageAgentLottieSettings
+            {
+                Source = AnimationSource,
+                RestingProgress = 0d,
+                Speed = 1d,
+                IsReversed = false,
+                Modifiers = new LottieModifierCollection()
+            };
+        }
+
+        AnimationModifiers = animationSettings.Modifiers ?? new LottieModifierCollection();
+        ActionAnimation.Speed = animationSettings.Speed ?? 1d;
+        ActionAnimation.IsReversed = animationSettings.IsReversed ?? false;
+        animationInteraction.RestingProgress = animationSettings.RestingProgress ?? 0d;
 
         OnPropertyChanged(nameof(IsAnimationVisible));
         OnPropertyChanged(nameof(IsTextVisible));
@@ -228,7 +244,7 @@ public partial class StatusActionButton : ContentView
         ApplyAnimationSurface();
 
         ActionAnimation.IsPlaying = false;
-        ActionAnimation.Progress = 0;
+        ActionAnimation.Progress = animationInteraction.RestingProgress;
         ActionAnimation.IsLooping = animationInteraction.IsActive;
 
         if (animationInteraction.IsActive) ActionAnimation.Play();
@@ -303,7 +319,7 @@ public partial class StatusActionButton : ContentView
         {
             animationInteraction.SetActive(false);
             ActionAnimation.IsPlaying = false;
-            ActionAnimation.Progress = 0;
+            ActionAnimation.Progress = animationInteraction.RestingProgress;
 
             pendingTap?.Cancel();
             pendingTap?.Dispose();

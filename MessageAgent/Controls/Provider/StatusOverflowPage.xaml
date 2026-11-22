@@ -6,7 +6,6 @@
     xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
     xmlns:converters="clr-namespace:MessageAgent.Converters"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
-    xmlns:lottieModels="clr-namespace:LottieAgent.Models;assembly=LottieAgent"
     x:Class="MessageAgent.Controls.Provider.StatusOverflowPage"
     x:Name="Root"
     BackgroundColor="Transparent"
@@ -15,7 +14,6 @@
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:MessageAgentLottieSourceConverter x:Key="MessageAgentLottieSourceConverter" />
-            <lottieModels:LottieModifierCollection x:Key="CloseAnimationModifiers" />
         </ResourceDictionary>
     </ContentPage.Resources>
 
@@ -79,7 +77,6 @@
                             HorizontalOptions="Center"
                             VerticalOptions="Center"
                             Progress="1"
-                            Modifiers="{StaticResource CloseAnimationModifiers}"
                             IsPlaying="False"
                             IsLooping="False"
                             AnimationLoaded="CloseAnimationOnLoaded"

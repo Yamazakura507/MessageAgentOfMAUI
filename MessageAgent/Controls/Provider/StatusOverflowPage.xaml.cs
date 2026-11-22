@@ -4,6 +4,8 @@ using MessageAgent.Controls.Provider.Abstract;
 using MessageAgent.Core.Models;
 using MessageAgent.Services;
 using MessageAgent.Services.Interactions;
+using MessageAgent.Services.Extensions;
+using MessageAgent.Resources.ExtensionResources;
 
 namespace MessageAgent.Controls.Provider;
 
@@ -54,14 +56,28 @@ public partial class StatusOverflowPage : AnimatedModalPage
         PanelBackgroundColor = dark ? Color.FromRgb(34, 37, 43) : Color.FromRgb(250, 250, 248);
         ForegroundColor = dark ? Color.FromRgb(242, 244, 247) : Color.FromRgb(30, 32, 36);
 
+        MessageAgentLottieSettings closeSettings = MessageAgentLotties.GetSettings(
+            MessageAgentLottieKeys.Close,
+            "Lotties/close.json",
+            defaultRestingProgress: 1d,
+            defaultModifiers: new LottieModifierCollection().SetColor("Fill", ForegroundColor));
+
         InitializeComponent();
         BindingContext = this;
 
         CloseAnimation.JsonLoader = MauiServiceProvider.GetRequiredService<ILottieJsonLoader>();
         CloseAnimation.ModifierProcessor = MauiServiceProvider.GetRequiredService<ILottieModifierProcessor>();
-        CloseAnimation.Modifiers.SetColor("Fill", ForegroundColor);
+        CloseAnimation.Source = closeSettings.Source;
+        CloseAnimation.Modifiers = closeSettings.Modifiers ?? new LottieModifierCollection();
+        CloseAnimation.Progress = closeSettings.RestingProgress ?? 1d;
+        CloseAnimation.Speed = closeSettings.Speed ?? 1d;
+        CloseAnimation.IsReversed = closeSettings.IsReversed ?? false;
 
-        closeAnimationInteraction = new LottiePlaybackInteraction(CloseAnimation, CloseButton);
+        closeAnimationInteraction = new LottiePlaybackInteraction(
+            CloseAnimation,
+            CloseButton,
+            closeSettings.RestingProgress!.Value,
+            resetToRestingOnDeactivate: true);
 
         SizeChanged += OnPopupSizeChanged;
         Overlay.SizeChanged += OnPopupSizeChanged;
@@ -110,7 +126,7 @@ public partial class StatusOverflowPage : AnimatedModalPage
     private void CloseAnimationOnLoaded(object? sender, EventArgs e)
     {
         CloseAnimation.IsPlaying = false;
-        CloseAnimation.Progress = 1;
+        CloseAnimation.Progress = closeAnimationInteraction.RestingProgress;
         CloseAnimation.IsLooping = closeAnimationInteraction.IsActive;
 
         if (closeAnimationInteraction.IsActive) CloseAnimation.Play();

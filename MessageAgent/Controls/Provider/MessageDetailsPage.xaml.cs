@@ -6,6 +6,7 @@ using MessageAgent.Services.Extensions;
 using MessageAgent.Services.Interactions;
 using MessageAgent.Services.Interfaces;
 using MessageAgent.Core.Enums.Link;
+using MessageAgent.Resources.ExtensionResources;
 
 namespace MessageAgent.Controls.Provider;
 
@@ -15,6 +16,8 @@ namespace MessageAgent.Controls.Provider;
 public partial class MessageDetailsPage : AnimatedModalPage
 {
     private readonly LottiePlaybackInteraction closeAnimationInteraction;
+    private readonly LottiePlaybackInteraction previousArrowInteraction;
+    private readonly LottiePlaybackInteraction nextArrowInteraction;
     private readonly IVisualValueViewFactory visualValueViewFactory;
 
     /// <summary>
@@ -54,14 +57,45 @@ public partial class MessageDetailsPage : AnimatedModalPage
 
         DialogAccentColor = message.Type.GetDialogAccent();
 
+        MessageAgentLottieSettings arrowSettings = MessageAgentLotties.GetSettings(
+            MessageAgentLottieKeys.Arrow,
+            "Lotties/arrow.json",
+            defaultRestingProgress: 0.6622d,
+            defaultModifiers: new LottieModifierCollection().SetColor("Stroke 1", DialogAccentColor));
+
+        MessageAgentLottieSettings closeSettings = MessageAgentLotties.GetSettings(
+            MessageAgentLottieKeys.Close,
+            "Lotties/close.json",
+            defaultRestingProgress: 1d,
+            defaultModifiers: new LottieModifierCollection().SetColor("Fill", message.Type.GetAccentContent()));
+
         InitializeComponent();
-
-        ((LottieModifierCollection)Resources["LeftArrowModifiers"]).SetColor("Stroke 1", DialogAccentColor);
-        ((LottieModifierCollection)Resources["RightArrowModifiers"]).SetColor("Stroke 1", DialogAccentColor);
-
         BindingContext = message;
 
-        closeAnimationInteraction = new LottiePlaybackInteraction(CloseAnimation, CloseButton);
+        ApplyLottieSettings(PreviousImageArrow, arrowSettings);
+        ApplyLottieSettings(NextImageArrow, arrowSettings);
+        NextImageArrow.RotationY = 180;
+
+        ApplyLottieSettings(CloseAnimation, closeSettings);
+
+        closeAnimationInteraction = new LottiePlaybackInteraction(
+            CloseAnimation,
+            CloseButton,
+            closeSettings.RestingProgress!.Value,
+            resetToRestingOnDeactivate: true);
+
+        previousArrowInteraction = new LottiePlaybackInteraction(
+            PreviousImageArrow,
+            restingProgress: arrowSettings.RestingProgress!.Value,
+            activateOnHover: false,
+            resetToRestingOnDeactivate: true);
+
+        nextArrowInteraction = new LottiePlaybackInteraction(
+            NextImageArrow,
+            restingProgress: arrowSettings.RestingProgress!.Value,
+            activateOnHover: false,
+            resetToRestingOnDeactivate: true);
+
         UpdateCarouselNavigation(0);
     }
 
@@ -83,6 +117,8 @@ public partial class MessageDetailsPage : AnimatedModalPage
     protected override void OnDisappearing()
     {
         closeAnimationInteraction.Dispose();
+        previousArrowInteraction.Dispose();
+        nextArrowInteraction.Dispose();
         base.OnDisappearing();
     }
 
@@ -95,22 +131,38 @@ public partial class MessageDetailsPage : AnimatedModalPage
         if (PreviousImageArrow is null || NextImageArrow is null || ImagesCarousel is null) return;
 
         int count = (BindingContext as Message)?.Images.Count ?? 0;
-        PreviousImageArrow.Opacity = position > 0 ? 1 : 0.28;
-        PreviousImageArrow.IsEnabled = position > 0;
-        NextImageArrow.Opacity = position < count - 1 ? 1 : 0.28;
-        NextImageArrow.IsEnabled = position < count - 1;
+        int currentPosition = count == 0 ? 0 : Math.Clamp(position, 0, count - 1);
+        bool canGoPrevious = currentPosition > 0;
+        bool canGoNext = currentPosition < count - 1;
+
+        PreviousImageArrow.Opacity = canGoPrevious ? 1 : 0.28;
+        PreviousImageArrow.IsEnabled = canGoPrevious;
+        NextImageArrow.Opacity = canGoNext ? 1 : 0.28;
+        NextImageArrow.IsEnabled = canGoNext;
+
+        if (!canGoPrevious) previousArrowInteraction.SetActive(false);
+        if (!canGoNext) nextArrowInteraction.SetActive(false);
+    }
+
+    private static void ApplyLottieSettings(LottieAgent.Controls.LottieView animation, MessageAgentLottieSettings settings)
+    {
+        animation.Source = settings.Source;
+        animation.Modifiers = settings.Modifiers ?? new LottieModifierCollection();
+        animation.Progress = settings.RestingProgress ?? 0d;
+        animation.Speed = settings.Speed ?? 1d;
+        animation.IsReversed = settings.IsReversed ?? false;
     }
 
     private void PreviousImageOnTapped(object? sender, TappedEventArgs e)
     {
-        if (ImagesCarousel.Position > 0) ImagesCarousel.Position--;
+        if (ImagesCarousel.Position > 0) ImagesCarousel.Position = Math.Max(0, ImagesCarousel.Position - 1);
     }
 
     private void NextImageOnTapped(object? sender, TappedEventArgs e)
     {
         int count = (BindingContext as Message)?.Images.Count ?? 0;
 
-        if (ImagesCarousel.Position < count - 1) ImagesCarousel.Position++;
+        if (count > 0 && ImagesCarousel.Position < count - 1) ImagesCarousel.Position = Math.Min(count - 1, ImagesCarousel.Position + 1);
     }
 
     private async void LinkOnTapped(object? sender, TappedEventArgs e)
