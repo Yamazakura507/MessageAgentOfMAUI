@@ -16,6 +16,7 @@ namespace MessageAgent.Controls.Provider;
 public partial class MessageDetailsPage : AnimatedModalPage
 {
     private readonly LottiePlaybackInteraction closeAnimationInteraction;
+    private readonly LottiePlaybackInteraction headerCloseAnimationInteraction;
     private readonly LottiePlaybackInteraction previousArrowInteraction;
     private readonly LottiePlaybackInteraction nextArrowInteraction;
     private readonly IVisualValueViewFactory visualValueViewFactory;
@@ -59,15 +60,19 @@ public partial class MessageDetailsPage : AnimatedModalPage
 
         MessageAgentLottieSettings arrowSettings = MessageAgentLotties.GetSettings(
             MessageAgentLottieKeys.Arrow,
-            "Lotties/arrow.json",
             defaultRestingProgress: 0.6622d,
-            defaultModifiers: new LottieModifierCollection().SetColor("Stroke 1", DialogAccentColor));
+            defaultModifiers: new LottieModifierCollection().SetColor("Stroke 1", DialogAccentColor),
+            defaultSpeed: 1.25d);
 
         MessageAgentLottieSettings closeSettings = MessageAgentLotties.GetSettings(
             MessageAgentLottieKeys.Close,
-            "Lotties/close.json",
             defaultRestingProgress: 1d,
             defaultModifiers: new LottieModifierCollection().SetColor("Fill", message.Type.GetAccentContent()));
+
+        MessageAgentLottieSettings headerCloseSettings = MessageAgentLotties.GetSettings(
+            MessageAgentLottieKeys.Close,
+            defaultRestingProgress: 1d,
+            defaultModifiers: new LottieModifierCollection().SetColor("Fill", DialogAccentColor));
 
         InitializeComponent();
         BindingContext = message;
@@ -77,6 +82,7 @@ public partial class MessageDetailsPage : AnimatedModalPage
         NextImageArrow.RotationY = 180;
 
         ApplyLottieSettings(CloseAnimation, closeSettings);
+        ApplyLottieSettings(HeaderCloseAnimation, headerCloseSettings);
 
         closeAnimationInteraction = new LottiePlaybackInteraction(
             CloseAnimation,
@@ -84,16 +90,22 @@ public partial class MessageDetailsPage : AnimatedModalPage
             closeSettings.RestingProgress!.Value,
             resetToRestingOnDeactivate: true);
 
+        headerCloseAnimationInteraction = new LottiePlaybackInteraction(
+            HeaderCloseAnimation,
+            HeaderCloseButton,
+            headerCloseSettings.RestingProgress!.Value,
+            resetToRestingOnDeactivate: true);
+
         previousArrowInteraction = new LottiePlaybackInteraction(
             PreviousImageArrow,
             restingProgress: arrowSettings.RestingProgress!.Value,
-            activateOnHover: false,
+            activateOnHover: true,
             resetToRestingOnDeactivate: true);
 
         nextArrowInteraction = new LottiePlaybackInteraction(
             NextImageArrow,
             restingProgress: arrowSettings.RestingProgress!.Value,
-            activateOnHover: false,
+            activateOnHover: true,
             resetToRestingOnDeactivate: true);
 
         UpdateCarouselNavigation(0);
@@ -117,6 +129,7 @@ public partial class MessageDetailsPage : AnimatedModalPage
     protected override void OnDisappearing()
     {
         closeAnimationInteraction.Dispose();
+        headerCloseAnimationInteraction.Dispose();
         previousArrowInteraction.Dispose();
         nextArrowInteraction.Dispose();
         base.OnDisappearing();

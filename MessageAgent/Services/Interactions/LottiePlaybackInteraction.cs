@@ -22,9 +22,11 @@ internal sealed class LottiePlaybackInteraction : IDisposable
     private readonly LottieView animation;
     private readonly VisualElement interactionTarget;
     private readonly bool activateOnHover;
+    private const string ReturnAnimationName = "LottieReturnToRestingProgress";
     private readonly bool resetToRestingOnDeactivate;
     private double restingProgress;
     private bool isActive;
+    private bool originalIsReversed;
     private bool isDisposed;
 
     #if WINDOWS
@@ -64,6 +66,7 @@ internal sealed class LottiePlaybackInteraction : IDisposable
         this.interactionTarget = interactionTarget ?? animation;
         this.activateOnHover = activateOnHover;
         this.resetToRestingOnDeactivate = resetToRestingOnDeactivate;
+        originalIsReversed = animation.IsReversed;
         RestingProgress = restingProgress;
         this.interactionTarget.HandlerChanged += OnHandlerChanged;
 
@@ -82,7 +85,11 @@ internal sealed class LottiePlaybackInteraction : IDisposable
 
             restingProgress = value;
 
-            if (!isActive) animation.Progress = value;
+            if (!isActive)
+            {
+                animation.AbortAnimation(ReturnAnimationName);
+                animation.Progress = value;
+            }
         }
     }
 
@@ -93,23 +100,59 @@ internal sealed class LottiePlaybackInteraction : IDisposable
     public void SetActive(bool active)
     {
         if (isDisposed || isActive == active) return;
+        if (active && !interactionTarget.IsEnabled) return;
 
         isActive = active;
-        animation.IsLooping = active;
 
         if (!active)
         {
-            if (resetToRestingOnDeactivate)
+            if (!resetToRestingOnDeactivate)
             {
-                animation.IsPlaying = false;
-                animation.Progress = RestingProgress;
+                animation.IsLooping = false;
+                animation.Pause();
+                return;
             }
 
+            ReturnToRestingPosition();
             return;
         }
 
+        animation.AbortAnimation(ReturnAnimationName);
+        animation.IsLooping = true;
+        animation.IsReversed = originalIsReversed;
         animation.Progress = RestingProgress;
         animation.Play();
+    }
+
+    private void ReturnToRestingPosition()
+    {
+        animation.IsLooping = false;
+        animation.Pause();
+
+        double startProgress = animation.Progress;
+        double targetProgress = RestingProgress;
+
+        if (Math.Abs(startProgress - targetProgress) < 0.0001d)
+        {
+            animation.Progress = targetProgress;
+            return;
+        }
+
+        uint duration = (uint)Math.Clamp(Math.Abs(startProgress - targetProgress) * 260d, 100d, 260d);
+
+        new Animation(progress => animation.Progress = progress, startProgress, targetProgress)
+            .Commit(
+                animation,
+                ReturnAnimationName,
+                rate: 16,
+                length: duration,
+                easing: Easing.CubicOut,
+                finished: (_, canceled) =>
+                {
+                    if (canceled || isActive || isDisposed) return;
+
+                    animation.Progress = RestingProgress;
+                });
     }
 
     private void OnHandlerChanged(object? sender, EventArgs e) => AttachNativeInput();
@@ -258,7 +301,9 @@ internal sealed class LottiePlaybackInteraction : IDisposable
         if (isDisposed) return;
 
         interactionTarget.HandlerChanged -= OnHandlerChanged;
+        animation.AbortAnimation(ReturnAnimationName);
         isActive = false;
+        animation.IsReversed = originalIsReversed;
         animation.IsLooping = false;
         animation.IsPlaying = false;
         if (resetToRestingOnDeactivate) animation.Progress = RestingProgress;

@@ -147,7 +147,7 @@ public partial class StatusActionButton : ContentView
         {
             animationSettings = MessageAgentLotties.GetSettings(
                 MessageAgentLottieKeys.More,
-                AnimationSource ?? "Lotties/more_point.json",
+                AnimationSource,
                 defaultRestingProgress: 0d,
                 defaultModifiers: CreateMoreAnimationModifiers());
         }
@@ -155,7 +155,7 @@ public partial class StatusActionButton : ContentView
         {
             animationSettings = MessageAgentLotties.GetSettings(
                 MessageAgentLottieKeys.Minimize,
-                AnimationSource ?? "Lotties/minimize.json",
+                AnimationSource,
                 defaultRestingProgress: 0d,
                 defaultModifiers: CreateMinimizeAnimationModifiers());
         }

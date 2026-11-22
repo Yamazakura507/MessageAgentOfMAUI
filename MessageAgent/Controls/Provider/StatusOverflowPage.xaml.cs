@@ -58,7 +58,6 @@ public partial class StatusOverflowPage : AnimatedModalPage
 
         MessageAgentLottieSettings closeSettings = MessageAgentLotties.GetSettings(
             MessageAgentLottieKeys.Close,
-            "Lotties/close.json",
             defaultRestingProgress: 1d,
             defaultModifiers: new LottieModifierCollection().SetColor("Fill", ForegroundColor));
 

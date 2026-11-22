@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:extension="clr-namespace:MessageAgent.Resources.ExtensionResources"
+    x:Class="MessageAgent.Resources.DefaultResourceDictionary">
+
+    <x:String x:Key="MessageAgent.Images.Read">message_read.png</x:String>
+    <x:String x:Key="MessageAgent.Images.Unread">message_unread.png</x:String>
+    <x:String x:Key="MessageAgent.Images.Important">important.png</x:String>
+
+    <extension:MessageAgentLottieSettings
+        x:Key="MessageAgent.Lotties.Arrow"
+        Source="Lotties/arrow.json"
+        RestingProgress="0.6622"
+        Speed="1.25"
+        IsReversed="False" />
+
+    <extension:MessageAgentLottieSettings
+        x:Key="MessageAgent.Lotties.Close"
+        Source="Lotties/close.json"
+        RestingProgress="1"
+        Speed="1"
+        IsReversed="False" />
+
+    <extension:MessageAgentLottieSettings
+        x:Key="MessageAgent.Lotties.More"
+        Source="Lotties/more_point.json"
+        RestingProgress="0"
+        Speed="1"
+        IsReversed="False" />
+
+    <extension:MessageAgentLottieSettings
+        x:Key="MessageAgent.Lotties.Minimize"
+        Source="Lotties/minimize.json"
+        RestingProgress="0"
+        Speed="1"
+        IsReversed="False" />
+</ResourceDictionary>

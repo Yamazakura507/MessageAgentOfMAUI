@@ -1,4 +1,5 @@
 using LottieAgent.Models;
+using MessageAgent.Resources;
 using MessageAgent.Resources.ExtensionResources;
 
 namespace MessageAgent.Services.Extensions;
@@ -26,14 +27,14 @@ public static class MessageAgentLotties
     /// <returns>A complete settings object suitable for applying to a LottieView.</returns>
     public static MessageAgentLottieSettings GetSettings(
         this string resourceKey,
-        string defaultSource,
+        string? defaultSource = null,
         double defaultRestingProgress = 0d,
         LottieModifierCollection? defaultModifiers = null,
         double defaultSpeed = 1d,
         bool defaultIsReversed = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(resourceKey);
-        ArgumentException.ThrowIfNullOrWhiteSpace(defaultSource);
+        if (defaultSource is not null) ArgumentException.ThrowIfNullOrWhiteSpace(defaultSource);
 
         if (!double.IsFinite(defaultRestingProgress) || defaultRestingProgress is < 0d or > 1d) throw new ArgumentOutOfRangeException(nameof(defaultRestingProgress));
         if (!double.IsFinite(defaultSpeed) || defaultSpeed <= 0d) throw new ArgumentOutOfRangeException(nameof(defaultSpeed));
@@ -43,20 +44,26 @@ public static class MessageAgentLotties
 
         if (resources is not null) resources.TryFindResource(resourceKey, out resourceValue);
 
+        object? defaultResourceValue = null;
+        DefaultResourceDictionary.Instance.TryFindResource(resourceKey, out defaultResourceValue);
+
         MessageAgentLottieSettings? configured = resourceValue as MessageAgentLottieSettings;
-        string source = resourceValue is string sourceOverride && !string.IsNullOrWhiteSpace(sourceOverride)
+        MessageAgentLottieSettings? defaults = defaultResourceValue as MessageAgentLottieSettings;
+        string? source = resourceValue is string sourceOverride && !string.IsNullOrWhiteSpace(sourceOverride)
             ? sourceOverride
             : !string.IsNullOrWhiteSpace(configured?.Source)
                 ? configured.Source!
-                : defaultSource;
+                : !string.IsNullOrWhiteSpace(defaultSource)
+                    ? defaultSource!
+                    : defaults?.Source;
 
         return new MessageAgentLottieSettings
         {
             Source = source,
-            Modifiers = CombineModifiers(defaultModifiers, configured?.Modifiers),
-            RestingProgress = configured?.RestingProgress ?? defaultRestingProgress,
-            Speed = configured?.Speed ?? defaultSpeed,
-            IsReversed = configured?.IsReversed ?? defaultIsReversed
+            Modifiers = CombineModifiers(defaultModifiers, CombineModifiers(defaults?.Modifiers, configured?.Modifiers)),
+            RestingProgress = configured?.RestingProgress ?? defaults?.RestingProgress ?? defaultRestingProgress,
+            Speed = configured?.Speed ?? defaults?.Speed ?? defaultSpeed,
+            IsReversed = configured?.IsReversed ?? defaults?.IsReversed ?? defaultIsReversed
         };
     }
 

@@ -22,14 +22,30 @@ public static class MessageAgentImages
 
         if (resources is not null && resources.TryFindResource(resourceKey, out object? value))
         {
-            if (value is FileImageSource fileImageSource && !string.IsNullOrWhiteSpace(fileImageSource.File))
-                return ImageSource.FromFile(NormalizeImageFileName(fileImageSource.File));
-            if (value is ImageSource imageSource) return imageSource;
-            if (value is string fileName && !string.IsNullOrWhiteSpace(fileName))
-                return ImageSource.FromFile(NormalizeImageFileName(fileName));
+            ImageSource? applicationSource = ToImageSource(value);
+
+            if (applicationSource is not null) return applicationSource;
+        }
+
+        if (MessageAgent.Resources.DefaultResourceDictionary.Instance.TryFindResource(resourceKey, out object? defaultValue))
+        {
+            ImageSource? defaultSource = ToImageSource(defaultValue);
+
+            if (defaultSource is not null) return defaultSource;
         }
 
         return ImageSource.FromFile(NormalizeImageFileName(defaultFileName));
+    }
+
+    private static ImageSource? ToImageSource(object? value)
+    {
+        if (value is FileImageSource fileImageSource && !string.IsNullOrWhiteSpace(fileImageSource.File))
+            return ImageSource.FromFile(NormalizeImageFileName(fileImageSource.File));
+        if (value is ImageSource imageSource) return imageSource;
+        if (value is string fileName && !string.IsNullOrWhiteSpace(fileName))
+            return ImageSource.FromFile(NormalizeImageFileName(fileName));
+
+        return null;
     }
 
     private static string NormalizeImageFileName(string fileName)

@@ -179,7 +179,7 @@ See the [LottieAgent documentation](../LottieAgentOfMAUI_NET10/README.md#declari
 
 ## Override built-in icons
 
-The library's default icons are stored in `MessageAgent/Resources/Images`. They are defaults, not fixed converter output: MessageAgent first looks for an application resource and falls back to its packaged image when no override is registered. MAUI compiles SVG source files into PNG resources, so runtime image names use the `.png` extension.
+The library's default icons are stored in `MessageAgent/Resources/Images` and their resource keys and file names are centralized in `Resources/DefaultResourceDictionary.xaml`. The dictionary is loaded internally as the library fallback; applications do not need to merge it. MessageAgent first looks for an application resource and falls back to the matching entry in `DefaultResourceDictionary.xaml`. MAUI compiles SVG source files into PNG resources, so runtime image names use the `.png` extension.
 
 The public resource keys are exposed by `MessageAgentImageKeys`:
 
@@ -375,18 +375,18 @@ Example status sorting:
 
 ## Image carousel navigation
 
-The details dialog uses the library asset `Lotties/arrow.json` for both side arrows. The right arrow is mirrored at the view level, so the mirroring also works with replacement Lottie files that use different internal layer names. Both arrows use the message's contrast-adjusted dialog accent (`MessageType.GetDialogAccent()`). They play only while pressed and return to their configured resting frame after release. The carousel sets `Loop="False"`, so swiping cannot wrap from the last image to the first or from the first to the last. Navigation arrows are disabled at the corresponding ends.
+The details dialog uses the library asset `Lotties/arrow.json` for both side arrows. The right arrow is mirrored at the view level, so the mirroring also works with replacement Lottie files that use different internal layer names. Both arrows use the message's contrast-adjusted dialog accent (`MessageType.GetDialogAccent()`) and play on pointer hover. When the pointer leaves, the animation smoothly returns to its configured `RestingProgress`, including intermediate positions, before stopping. The default arrow speed is `1.25`. An arrow disabled at the corresponding carousel boundary cannot start playback on hover. The details dialog retains its text-and-icon close action at the bottom and also provides a compact Lottie-only close action in the header; the header icon uses the dialog accent color. The carousel sets `Loop="False"`, so swiping cannot wrap from the last image to the first or from the first to the last.
 
 ## Override built-in Lottie animations
 
-The library's interface animations can be replaced through application resources, using the public keys in `MessageAgentLottieKeys`. Each key accepts either a source string (the original source-only override format) or a `MessageAgentLottieSettings` object. Resource lookup includes merged application dictionaries; omitted settings inherit the library defaults.
+The library's interface animations can be replaced through application resources, using the public keys in `MessageAgentLottieKeys`. The built-in sources and their default settings are centralized in `MessageAgent/Resources/DefaultResourceDictionary.xaml`; it is loaded internally and does not need to be merged into application resources. Application resources take precedence, including merged dictionaries. Each key accepts either a source string (the original source-only override format) or a `MessageAgentLottieSettings` object. Omitted settings inherit the values from `DefaultResourceDictionary.xaml`.
 
-| Key | Default animation | Default resting Progress |
-|---|---|---:|
-| `MessageAgentLottieKeys.Arrow` (`MessageAgent.Lotties.Arrow`) | `Lotties/arrow.json` | `0.6622` |
-| `MessageAgentLottieKeys.Close` (`MessageAgent.Lotties.Close`) | `Lotties/close.json` | `1` |
-| `MessageAgentLottieKeys.More` (`MessageAgent.Lotties.More`) | `Lotties/more_point.json` | `0` |
-| `MessageAgentLottieKeys.Minimize` (`MessageAgent.Lotties.Minimize`) | `Lotties/minimize.json` | `0` |
+| Key | Default animation | Resting Progress | Speed |
+|---|---|---:|---:|
+| `MessageAgentLottieKeys.Arrow` (`MessageAgent.Lotties.Arrow`) | `Lotties/arrow.json` | `0.6622` | `1.25` |
+| `MessageAgentLottieKeys.Close` (`MessageAgent.Lotties.Close`) | `Lotties/close.json` | `1` | `1` |
+| `MessageAgentLottieKeys.More` (`MessageAgent.Lotties.More`) | `Lotties/more_point.json` | `0` | `1` |
+| `MessageAgentLottieKeys.Minimize` (`MessageAgent.Lotties.Minimize`) | `Lotties/minimize.json` | `0` | `1` |
 
 A settings object can override the source, modifier collection, resting position, playback speed and playback direction. For example:
 

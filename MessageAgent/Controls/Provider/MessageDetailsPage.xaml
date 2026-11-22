@@ -46,7 +46,7 @@
             </Border.StrokeShape>
             <ScrollView>
                 <VerticalStackLayout Spacing="16">
-                    <Grid ColumnDefinitions="56,*" ColumnSpacing="12">
+                    <Grid ColumnDefinitions="56,*,32" ColumnSpacing="12">
                         <lottie:LottieView
                             x:Name="MessageIcon"
                             Grid.Column="0"
@@ -91,6 +91,33 @@
                                 TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Foreground}"
                                 LineBreakMode="WordWrap" />
                         </Grid>
+                        <Border
+                            x:Name="HeaderCloseButton"
+                            Grid.Column="2"
+                            WidthRequest="30"
+                            HeightRequest="30"
+                            Padding="2"
+                            BackgroundColor="Transparent"
+                            StrokeThickness="0"
+                            HorizontalOptions="End"
+                            VerticalOptions="Start"
+                            ToolTipProperties.Text="Закрыть">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="CloseButtonOnClicked" />
+                            </Border.GestureRecognizers>
+                            <lottie:LottieView
+                                x:Name="HeaderCloseAnimation"
+                                WidthRequest="26"
+                                HeightRequest="26"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center"
+                                IsPlaying="False"
+                                IsLooping="False"
+                                BackgroundColor="Transparent"
+                                Source="{Binding ., Converter={StaticResource MessageAgentLottieSourceConverter}, ConverterParameter=MessageAgent.Lotties.Close}"
+                                JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
+                                ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}" />
+                        </Border>
                     </Grid>
 
                     <statusViews:StatusGridView
