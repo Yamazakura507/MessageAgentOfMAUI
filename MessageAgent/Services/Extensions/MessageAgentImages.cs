@@ -10,7 +10,7 @@ public static class MessageAgentImages
     /// Gets an icon source, preferring an application resource override.
     /// Resource values may be an <see cref="ImageSource"/> or a file-name string.
     /// </summary>
-    /// <param name="resourceKey">The key from <see cref="Resources.ExtensionImages.MessageAgentImageKeys"/>.</param>
+    /// <param name="resourceKey">The key from <see cref="Resources.ExtensionResources.MessageAgentImageKeys"/>.</param>
     /// <param name="defaultFileName">The packaged fallback image file name.</param>
     /// <returns>The application override or the library's default image source.</returns>
     public static ImageSource Get(string resourceKey, string defaultFileName)

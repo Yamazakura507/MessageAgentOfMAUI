@@ -1,5 +1,5 @@
 using System.Globalization;
-using MessageAgent.Resources.ExtensionImages;
+using MessageAgent.Resources.ExtensionResources;
 using MessageAgent.Services.Extensions;
 
 namespace MessageAgent.Converters;

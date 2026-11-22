@@ -1,4 +1,4 @@
-namespace MessageAgent.Resources.ExtensionImages;
+namespace MessageAgent.Resources.ExtensionResources;
 
 /// <summary>
 /// Resource keys for the built-in MessageAgent icons. Applications can override
