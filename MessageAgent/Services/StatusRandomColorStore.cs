@@ -16,14 +16,23 @@ public static class StatusRandomColorStore
 
     private static readonly ConditionalWeakTable<Status, ColorHolder> ColorsByStatus = new();
 
-    public static Color GetOrCreate(Status status)
+    /// <summary>
+    /// Gets the existing random color for a status or generates one on first use.
+    /// </summary>
+    /// <param name="status">The status used as the weak-keyed cache key.</param>
+    /// <returns>The stable random color associated with the status instance.</returns>
+    public static Color GetOrCreate(this Status status)
     {
         ArgumentNullException.ThrowIfNull(status);
 
         return ColorsByStatus.GetValue(status, static _ => new ColorHolder(Color.FromHsla(Random.Shared.NextDouble(), 0.72, 0.45))).Value;
     }
 
-    public static void Reset(Status status)
+    /// <summary>
+    /// Removes the cached random color so a new one is generated on next access.
+    /// </summary>
+    /// <param name="status">The status whose color should be reset.</param>
+    public static void Reset(this Status status)
     {
         ArgumentNullException.ThrowIfNull(status);
 

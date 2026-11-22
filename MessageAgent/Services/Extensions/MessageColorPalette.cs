@@ -1,4 +1,4 @@
-using MessageAgent.Core.Enums;
+using MessageAgent.Core.Models.ExtentionKinds;
 using MessageAgent.Services.Models;
 
 namespace MessageAgent.Services.Extensions;
@@ -8,41 +8,93 @@ namespace MessageAgent.Services.Extensions;
 /// </summary>
 public static class MessageColorPalette
 {
+    /// <summary>
+    /// Gets the theme-aware dialog surface derived from a message type.
+    /// </summary>
+    /// <param name="type">The message type defining the accent and optional overrides.</param>
+    /// <param name="theme">The theme to use, or the current application theme when omitted.</param>
+    /// <returns>A dialog surface color.</returns>
     public static Color GetDialogSurface(this MessageType type, AppTheme? theme = null)
     {
-        bool dark = theme.IsDark();
-        Color neutral = Color.FromRgb(0.985f, 0.982f, 0.973f);
-        double tint = 0.105;
+        ArgumentNullException.ThrowIfNull(type);
 
-        if (dark)
-        {
-            neutral = Color.FromRgb(0.105f, 0.12f, 0.145f);
-            tint = 0.24;
-        }
-        
+        if (type.DialogSurfaceColor is Color customSurface) return customSurface;
+
+        bool dark = theme.IsDark();
+        Color neutral = dark ? Color.FromRgb(0.105f, 0.12f, 0.145f) : Color.FromRgb(0.985f, 0.982f, 0.973f);
+        double tint = dark ? 0.24 : 0.105;
+
         return Mix(neutral, type.GetAccentColor(), tint);
     }
 
+    /// <summary>
+    /// Gets a dialog foreground color with sufficient contrast against its surface.
+    /// </summary>
+    /// <param name="type">The message type.</param>
+    /// <param name="theme">The theme to use, or the current application theme.</param>
+    /// <returns>A contrast-adjusted foreground color.</returns>
     public static Color GetDialogForeground(this MessageType type, AppTheme? theme = null)
     {
-        bool dark = theme.IsDark();
-        Color neutral = dark ? Color.FromRgb(0.96f, 0.965f, 0.98f) : Color.FromRgb(0.105f, 0.11f, 0.13f);
+        ArgumentNullException.ThrowIfNull(type);
 
-        return EnsureContrast(neutral, type.GetDialogSurface(theme), 7.0);
+        Color surface = type.GetDialogSurface(theme);
+
+        if (type.DialogForegroundColor is Color custom) return EnsureContrast(custom, surface, 4.5);
+
+        Color neutral = theme.IsDark() ? Color.FromRgb(0.96f, 0.965f, 0.98f) : Color.FromRgb(0.105f, 0.11f, 0.13f);
+
+        return EnsureContrast(neutral, surface, 7.0);
     }
 
+    /// <summary>
+    /// Gets the contrast-adjusted secondary dialog text color.
+    /// </summary>
+    /// <param name="type">The message type.</param>
+    /// <param name="theme">The theme to use, or the current application theme.</param>
+    /// <returns>A secondary foreground color.</returns>
     public static Color GetDialogSecondaryForeground(this MessageType type, AppTheme? theme = null)
     {
-        bool dark = theme.IsDark();
-        Color neutral = dark ? Color.FromRgb(0.82f, 0.84f, 0.87f) : Color.FromRgb(0.30f, 0.32f, 0.36f);
+        ArgumentNullException.ThrowIfNull(type);
 
-        return EnsureContrast(neutral, type.GetDialogSurface(theme), 4.5);
+        Color surface = type.GetDialogSurface(theme);
+
+        if (type.DialogSecondaryForegroundColor is Color custom) return EnsureContrast(custom, surface, 4.5);
+
+        Color neutral = theme.IsDark() ? Color.FromRgb(0.82f, 0.84f, 0.87f) : Color.FromRgb(0.30f, 0.32f, 0.36f);
+
+        return EnsureContrast(neutral, surface, 4.5);
     }
 
-    public static Color GetDialogAccent(this MessageType type, AppTheme? theme = null) => EnsureContrast(type.GetAccentColor(), type.GetDialogSurface(theme), 3.0);
+    /// <summary>
+    /// Gets an accent color adjusted for visibility on the dialog surface.
+    /// </summary>
+    /// <param name="type">The message type.</param>
+    /// <param name="theme">The theme to use, or the current application theme.</param>
+    /// <returns>A contrast-adjusted accent color.</returns>
+    public static Color GetDialogAccent(this MessageType type, AppTheme? theme = null)
+    {
+        ArgumentNullException.ThrowIfNull(type);
 
-    public static Color GetAccentContent(this MessageType type) => EnsureContrast(Color.FromRgb(1, 1, 1), type.GetAccentColor(), 4.5);
+        return EnsureContrast(type.DialogAccentColor ?? type.GetAccentColor(), type.GetDialogSurface(theme), 3.0);
+    }
 
+    /// <summary>
+    /// Gets a foreground color suitable for controls filled with the message accent.
+    /// </summary>
+    /// <param name="type">The message type.</param>
+    /// <returns>A contrast-adjusted content color.</returns>
+    public static Color GetAccentContent(this MessageType type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+
+        return EnsureContrast(type.AccentContentColor ?? Colors.White, type.GetAccentColor(), 4.5);
+    }
+
+    /// <summary>
+    /// Gets the neutral status text color for a light or dark theme.
+    /// </summary>
+    /// <param name="theme">The theme to use, or the current application theme.</param>
+    /// <returns>A neutral text color.</returns>
     public static Color GetNeutralStatusTextColor(AppTheme? theme = null)
     {
         bool dark = theme.IsDark();
@@ -50,18 +102,17 @@ public static class MessageColorPalette
         return dark ? Color.FromRgb(0.93f, 0.94f, 0.96f) : Color.FromRgb(0.14f, 0.15f, 0.17f);
     }
 
+    /// <summary>
+    /// Creates coordinated border, background and text colors for a status badge.
+    /// </summary>
+    /// <param name="sourceColor">The base accent color.</param>
+    /// <param name="theme">The theme to use, or the current application theme.</param>
+    /// <returns>A complete status visual palette.</returns>
     public static StatusVisualPalette CreateStatusPalette(this Color sourceColor, AppTheme? theme = null)
     {
         bool dark = theme.IsDark();
-        Color neutral = Color.FromRgb(0.995f, 0.992f, 0.985f);
-        double tint = 0.105;
-
-        if (dark)
-        {
-            neutral = Color.FromRgb(0.13f, 0.145f, 0.17f);
-            tint = 0.26;
-        }
-        
+        Color neutral = dark ? Color.FromRgb(0.13f, 0.145f, 0.17f) : Color.FromRgb(0.995f, 0.992f, 0.985f);
+        double tint = dark ? 0.26 : 0.105;
         Color background = Mix(neutral, sourceColor, tint);
         Color border = EnsureContrast(sourceColor, background, 3.0);
         Color text = EnsureContrast(sourceColor, background, 4.5);
@@ -69,6 +120,13 @@ public static class MessageColorPalette
         return new StatusVisualPalette(border, background, text);
     }
 
+    /// <summary>
+    /// Adjusts a foreground color to meet the requested contrast ratio.
+    /// </summary>
+    /// <param name="foreground">The original foreground color.</param>
+    /// <param name="background">The background color.</param>
+    /// <param name="minimumRatio">The minimum WCAG contrast ratio.</param>
+    /// <returns>The original color when sufficient, otherwise a blended contrast-safe color.</returns>
     public static Color EnsureContrast(Color foreground, Color background, double minimumRatio)
     {
         foreground = foreground.Opaque();
@@ -77,7 +135,6 @@ public static class MessageColorPalette
         if (ContrastRatio(foreground, background) >= minimumRatio) return foreground;
 
         Color target = ContrastRatio(Colors.Black, background) >= ContrastRatio(Colors.White, background) ? Colors.Black : Colors.White;
-
         double low = 0;
         double high = 1;
 
@@ -93,34 +150,30 @@ public static class MessageColorPalette
         return Mix(foreground, target, high);
     }
 
-    internal static Color GetAccentColor(this MessageType type) => type switch
-    {
-        MessageType.Error => Color.FromRgba(179, 15, 15, 255),
-        MessageType.Alert => Color.FromRgba(184, 134, 11, 255),
-        MessageType.Info => Color.FromRgba(0, 120, 194, 255),
-        _ => Color.FromRgba(0, 120, 194, 255)
-    };
+    /// <summary>
+    /// Gets the primary accent color of the message type, falling back to Info.
+    /// </summary>
+    /// <param name="type">The message type.</param>
+    /// <returns>The accent color.</returns>
+    public static Color GetAccentColor(this MessageType type) => type?.AccentColor ?? MessageType.Info.AccentColor;
 
-    internal static Color GetBackgroundColor(this MessageType type) => type switch
-    {
-        MessageType.Error => Color.FromRgba(179, 15, 15, 22),
-        MessageType.Alert => Color.FromRgba(184, 134, 11, 22),
-        MessageType.Info => Color.FromRgba(0, 120, 194, 22),
-        _ => Color.FromRgba(0, 120, 194, 22)
-    };
+    /// <summary>
+    /// Gets the configured label background or a translucent accent fallback.
+    /// </summary>
+    /// <param name="type">The message type.</param>
+    /// <returns>The label background color.</returns>
+    public static Color GetBackgroundColor(this MessageType type) => type is null
+        ? MessageType.Info.BackgroundColor ?? MessageType.Info.AccentColor.WithAlpha(22 / 255f)
+        : type.BackgroundColor ?? type.GetAccentColor().WithAlpha(22 / 255f);
 
-    private static bool IsDark(this AppTheme? theme)
-    {
-        AppTheme actual = theme ?? Application.Current?.RequestedTheme ?? AppTheme.Light;
-
-        return actual == AppTheme.Dark;
-    }
+    private static bool IsDark(this AppTheme? theme) => (theme ?? Application.Current?.RequestedTheme ?? AppTheme.Light) == AppTheme.Dark;
 
     private static Color Opaque(this Color color) => Color.FromRgb(color.Red, color.Green, color.Blue);
 
     private static Color Mix(Color first, Color second, double amount)
     {
         amount = Math.Clamp(amount, 0, 1);
+
         return Color.FromRgb(
             (float)(first.Red + (second.Red - first.Red) * amount),
             (float)(first.Green + (second.Green - first.Green) * amount),

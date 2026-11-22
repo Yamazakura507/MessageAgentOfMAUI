@@ -14,6 +14,17 @@ internal static class StatusGridLayoutCalculator
     public const double CollapseButtonWidth = 90;
     public const double HorizontalSafetyInset = 24;
 
+    /// <summary>
+    /// Measures the supplied statuses and packs them into rows without exceeding the
+    /// available row width. On the final permitted row, the reserved end width is
+    /// subtracted from the row capacity.
+    /// </summary>
+    /// <param name="statuses">Statuses to measure and arrange, in their display order.</param>
+    /// <param name="maximumRows">Maximum number of rows to produce. Values less than or equal to zero produce no rows.</param>
+    /// <param name="availableWidth">Available horizontal width for each row.</param>
+    /// <param name="reservedEndWidth">Width reserved at the end of the final permitted row, such as space for an overflow control.</param>
+    /// <param name="nextIndex"> Receives the index of the first status that was not included in the returned rows, or the number of statuses when all statuses were packed.</param>
+    /// <returns>The calculated rows. Each item contains the measured status width and title truncation information.</returns>
     public static List<List<StatusGridItem>> PackRows(
         this IReadOnlyList<Status> statuses, 
         int maximumRows, 

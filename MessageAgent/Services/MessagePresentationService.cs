@@ -1,4 +1,4 @@
-using MessageAgent.Core.Enums;
+using MessageAgent.Core.Enums.Message;
 using MessageAgent.Core.Extensions;
 using MessageAgent.Core.Models;
 using MessageAgent.Services.Interfaces;
@@ -30,6 +30,7 @@ public sealed class MessagePresentationService : IMessagePresentationService
         return borderWidth + visualWidth + titleWidth + 3;
     }
 
+    /// <inheritdoc />
     public MessagePresentationState Evaluate(
         Message? message,
         MessageShowType showType,
@@ -48,7 +49,7 @@ public sealed class MessagePresentationService : IMessagePresentationService
     {
         if (message is null) return new MessagePresentationState(Array.Empty<StatusPresentationItem>(), false, false, false);
 
-        List<Status> statuses = message.Status.Sort(distinct: true);
+        List<Status> statuses = message.Status.Distinct<Status>(ReferenceEqualityComparer.Instance).ToList();
         int statusLimit = Math.Max(0, maxStatusesOnLabel);
         bool hasStatusOverflow = statuses.Count > statusLimit;
         List<Status> labelStatuses = statuses.Take(statusLimit).ToList();
@@ -86,6 +87,7 @@ public sealed class MessagePresentationService : IMessagePresentationService
         while (presentedStatuses.Count > 0 && totalStatusWidth > availableStatusWidth)
         {
             StatusPresentationItem last = presentedStatuses[^1];
+
             totalStatusWidth -= GetStatusDisplayWidth(last.Status, last.ShowTitle);
             presentedStatuses.RemoveAt(presentedStatuses.Count - 1);
         }
@@ -119,8 +121,9 @@ public sealed class MessagePresentationService : IMessagePresentationService
         bool statusesTruncated = statuses.Count > visibleStatuses.Count || statusTitlesTruncated;
         bool hasDescription = !string.IsNullOrWhiteSpace(message.Description);
         bool hasImages = message.Images is { Count: > 0 };
-        bool hasDetails = explicitlyTruncated || visuallyTruncated || statusesHidden || statusesTruncated || hasDescription || hasImages;
-        bool isImportant = statuses.Any(status => status.IsImportant);
+        bool hasLinks = message.Links is { Count: > 0 };
+        bool hasDetails = explicitlyTruncated || visuallyTruncated || statusesHidden || statusesTruncated || hasDescription || hasLinks || hasImages;
+        bool isImportant = message.IsImportant;
         bool hiddenContent = showType == MessageShowType.HideLableAlways || hasDetails;
         bool shouldLoopNotification = isImportant && hiddenContent && !detailsDialogOpened && !message.IsRead;
 

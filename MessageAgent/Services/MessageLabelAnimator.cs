@@ -1,4 +1,4 @@
-using MessageAgent.Core.Enums;
+using MessageAgent.Core.Enums.Message;
 using MessageAgent.Services.Interfaces;
 
 namespace MessageAgent.Services;
@@ -10,6 +10,7 @@ public sealed class MessageLabelAnimator : IMessageLabelAnimator
 {
     private int animationVersion;
 
+    /// <inheritdoc />
     public async Task SetVisibilityAsync(Border target, bool visible, MessageLabelEffect effect, bool animated)
     {
         ArgumentNullException.ThrowIfNull(target);

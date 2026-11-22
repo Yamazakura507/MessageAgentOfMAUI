@@ -8,8 +8,12 @@ namespace MessageAgent.Converters;
 /// </summary>
 public sealed class CollectionCountConverter : IValueConverter
 {
+    /// <summary>
+    /// Gets or sets the minimum collection count required for a positive result.
+    /// </summary>
     public int MinimumCount { get; set; } = 1;
 
+    /// <inheritdoc />
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         int minimum = Math.Max(1, MinimumCount);
@@ -34,5 +38,6 @@ public sealed class CollectionCountConverter : IValueConverter
         }
     }
 
+    /// <inheritdoc />
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
 }

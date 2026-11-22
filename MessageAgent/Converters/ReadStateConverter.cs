@@ -1,4 +1,6 @@
 using System.Globalization;
+using MessageAgent.Resources.ExtensionImages;
+using MessageAgent.Services.Extensions;
 
 namespace MessageAgent.Converters;
 
@@ -7,16 +9,20 @@ namespace MessageAgent.Converters;
 /// </summary>
 public sealed class ReadStateConverter : IValueConverter
 {
+    /// <inheritdoc />
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         bool isRead = value is true;
 
         return parameter?.ToString() switch
         {
-            "Image" => ImageSource.FromFile(isRead ? "message_read.png" : "message_unread.png"),
+            "Image" => isRead 
+                        ? MessageAgentImages.Get(MessageAgentImageKeys.Read, "message_read.png") 
+                        : MessageAgentImages.Get(MessageAgentImageKeys.Unread, "message_unread.png"),
             _ => isRead ? "Прочитано" : "Не прочитано"
         };
     }
 
+    /// <inheritdoc />
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
 }

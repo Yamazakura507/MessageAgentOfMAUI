@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
+    xmlns:lottieModels="clr-namespace:LottieAgent.Models;assembly=LottieAgent"
     xmlns:views="clr-namespace:MessageAgent.Controls"
     xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
     xmlns:converters="clr-namespace:MessageAgent.Converters"
@@ -20,18 +21,14 @@
             <converters:MessageTypeToTextConverter x:Key="MessageTypeToTextConverter" />
             <converters:MessageTypeToLottieModifiersConverter x:Key="LottieModifiersConverter" />
             <converters:ReadStateConverter x:Key="ReadStateConverter" />
+            <converters:MessageAgentImageSourceConverter x:Key="MessageAgentImageSourceConverter" />
             <converters:HasTextConverter x:Key="HasTextConverter" />
             <converters:CollectionCountConverter x:Key="HasItemsConverter" MinimumCount="1" />
             <converters:CollectionCountConverter x:Key="HasMultipleItemsConverter" MinimumCount="2" />
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <Grid
-        x:Name="Overlay"
-        Padding="24"
-        BackgroundColor="#96000000"
-        Opacity="0">
-
+    <Grid x:Name="Overlay" Padding="24" BackgroundColor="#96000000" Opacity="0">
         <Border
             x:Name="DetailsPanel"
             Padding="20"
@@ -44,14 +41,11 @@
             StrokeThickness="1.5"
             Opacity="0"
             Scale="0.94">
-
             <Border.StrokeShape>
                 <shapes:RoundRectangle CornerRadius="18" />
             </Border.StrokeShape>
-
             <ScrollView>
                 <VerticalStackLayout Spacing="16">
-
                     <Grid ColumnDefinitions="56,*" ColumnSpacing="12">
                         <lottie:LottieView
                             x:Name="MessageIcon"
@@ -63,35 +57,26 @@
                             IsPlaying="False"
                             IsLooping="False"
                             Progress="1"
-                            AnimationLoaded="MessageIconOnLoaded"
-                            Source="Lotties/circleLable.json"
+                            Source="{Binding Type.NotificationAnimationSource}"
                             JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
                             ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
                             Modifiers="{Binding Type, Converter={StaticResource LottieModifiersConverter}}" />
-
-                        <Grid
-                            Grid.Column="1"
-                            RowDefinitions="Auto,Auto"
-                            RowSpacing="3"
-                            VerticalOptions="Center">
+                        <Grid Grid.Column="1" RowDefinitions="Auto,Auto" RowSpacing="3" VerticalOptions="Center">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                 <Label
-                                    Grid.Column="0"
                                     Text="{Binding Type, Converter={StaticResource MessageTypeToTextConverter}}"
                                     TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
-                                    FontSize="12"
-                                    FontAttributes="Bold"
-                                    VerticalOptions="Center" />
-
-                                <HorizontalStackLayout
-                                    Grid.Column="1"
-                                    Spacing="5"
-                                    VerticalOptions="Center">
+                                    FontSize="12" FontAttributes="Bold" VerticalOptions="Center" />
+                                <HorizontalStackLayout Grid.Column="1" Spacing="5" VerticalOptions="Center">
                                     <Image
                                         Source="{Binding IsRead, Converter={StaticResource ReadStateConverter}, ConverterParameter=Image}"
-                                        WidthRequest="16"
-                                        HeightRequest="16"
-                                        Aspect="AspectFit" />
+                                        WidthRequest="16" HeightRequest="16" Aspect="AspectFit" />
+                                    <Image
+                                        Source="{Binding IsImportant, Converter={StaticResource MessageAgentImageSourceConverter}, ConverterParameter=MessageAgent.Images.Important}"
+                                        WidthRequest="16" HeightRequest="16"
+                                        Aspect="AspectFit"
+                                        IsVisible="{Binding IsImportant}"
+                                        ToolTipProperties.Text="Важное сообщение" />
                                     <Label
                                         Text="{Binding IsRead, Converter={StaticResource ReadStateConverter}}"
                                         FontSize="11"
@@ -99,12 +84,10 @@
                                         VerticalOptions="Center" />
                                 </HorizontalStackLayout>
                             </Grid>
-
                             <Label
                                 Grid.Row="1"
                                 Text="{Binding Title}"
-                                FontSize="20"
-                                FontAttributes="Bold"
+                                FontSize="20" FontAttributes="Bold"
                                 TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Foreground}"
                                 LineBreakMode="WordWrap" />
                         </Grid>
@@ -113,8 +96,7 @@
                     <statusViews:StatusGridView
                         Items="{Binding Status}"
                         AccentColor="{Binding Type, Converter={StaticResource AccentColorConverter}}"
-                        IsPaged="True"
-                        HorizontalOptions="Fill"
+                        IsPaged="True" HorizontalOptions="Fill"
                         IsVisible="{Binding Status, Converter={StaticResource HasItemsConverter}}" />
 
                     <Label
@@ -124,24 +106,98 @@
                         LineBreakMode="WordWrap"
                         IsVisible="{Binding Description, Converter={StaticResource HasTextConverter}}" />
 
-                                        <CarouselView
-                        ItemsSource="{Binding Images}"
-                        HeightRequest="220"
-                        HorizontalOptions="Fill"
-                        IsVisible="{Binding Images, Converter={StaticResource HasItemsConverter}}"
-                        IndicatorView="{x:Reference ImagesIndicator}">
-                        <CarouselView.ItemTemplate>
+                    <!-- Links are deliberately placed after the description and before attachments. -->
+                    <CollectionView
+                        ItemsSource="{Binding Links}"
+                        SelectionMode="None"
+                        IsVisible="{Binding Links, Converter={StaticResource HasItemsConverter}}">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Grid>
-                                    <Image
-                                        Source="{Binding .}"
-                                        Aspect="AspectFit"
-                                        HorizontalOptions="Fill"
-                                        VerticalOptions="Fill" />
+                                <Grid
+                                    ColumnDefinitions="28,*"
+                                    ColumnSpacing="10"
+                                    Padding="8,6"
+                                    BackgroundColor="{Binding Source={x:Reference Root}, Path=LinkRowBackground}"
+                                    BindingContextChanged="LinkRowOnBindingContextChanged"
+                                    ToolTipProperties.Text="{Binding Description}">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="LinkOnTapped" />
+                                    </Grid.GestureRecognizers>
+                                    <ContentView
+                                        x:Name="LinkVisualHost"
+                                        Grid.Column="0"
+                                        WidthRequest="24"
+                                        HeightRequest="24"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center" />
+                                    <Label
+                                        Grid.Column="1"
+                                        Text="{Binding DisplayText}"
+                                        FontSize="14"
+                                        TextDecorations="Underline"
+                                        TextColor="{Binding Source={x:Reference Root}, Path=DialogAccentColor}"
+                                        VerticalOptions="Center"
+                                        LineBreakMode="TailTruncation" />
                                 </Grid>
                             </DataTemplate>
-                        </CarouselView.ItemTemplate>
-                    </CarouselView>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <Grid
+                        x:Name="ImagesCarouselHost"
+                        HeightRequest="220"
+                        ColumnDefinitions="36,*,36"
+                        IsVisible="{Binding Images, Converter={StaticResource HasItemsConverter}}">
+                        <lottie:LottieView
+                            x:Name="PreviousImageArrow"
+                            Grid.Column="0"
+                            Source="Lotties/arrow.json"
+                            WidthRequest="32" HeightRequest="32"
+                            HorizontalOptions="Center" VerticalOptions="Center"
+                            Progress="1" IsPlaying="False" IsLooping="False"
+                            JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
+                            ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
+                            Modifiers="{Binding LeftArrowModifiers, Source={x:Reference Root}}">
+                            <lottie:LottieView.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="PreviousImageOnTapped" />
+                            </lottie:LottieView.GestureRecognizers>
+                        </lottie:LottieView>
+
+                        <CarouselView
+                            x:Name="ImagesCarousel"
+                            Grid.Column="1"
+                            ItemsSource="{Binding Images}"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Fill"
+                            PositionChanged="ImagesCarouselOnPositionChanged"
+                            IndicatorView="{x:Reference ImagesIndicator}">
+                            <CarouselView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Image Source="{Binding .}" Aspect="AspectFit" HorizontalOptions="Fill" VerticalOptions="Fill" />
+                                    </Grid>
+                                </DataTemplate>
+                            </CarouselView.ItemTemplate>
+                        </CarouselView>
+
+                        <lottie:LottieView
+                            x:Name="NextImageArrow"
+                            Grid.Column="2"
+                            Source="Lotties/arrow.json"
+                            WidthRequest="32" HeightRequest="32"
+                            HorizontalOptions="Center" VerticalOptions="Center"
+                            Progress="1" IsPlaying="False" IsLooping="False"
+                            JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
+                            ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
+                            Modifiers="{Binding RightArrowModifiers, Source={x:Reference Root}}">
+                            <lottie:LottieView.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="NextImageOnTapped" />
+                            </lottie:LottieView.GestureRecognizers>
+                        </lottie:LottieView>
+                    </Grid>
 
                     <IndicatorView
                         x:Name="ImagesIndicator"
@@ -162,25 +218,18 @@
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="CloseButtonOnClicked" />
                         </Border.GestureRecognizers>
-                        <Grid
-                            ColumnDefinitions="26,Auto"
-                            ColumnSpacing="8"
-                            HorizontalOptions="Center"
-                            VerticalOptions="Center">
+                        <Grid ColumnDefinitions="26,Auto" ColumnSpacing="8" HorizontalOptions="Center" VerticalOptions="Center">
                             <lottie:LottieView
                                 x:Name="CloseAnimation"
                                 Grid.Column="0"
                                 Source="Lotties/close.json"
                                 Progress="1"
-                                AnimationLoaded="CloseAnimationOnLoaded"
                                 JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
                                 ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
-                                WidthRequest="24"
-                                HeightRequest="24"
-                                HorizontalOptions="Center"
-                                VerticalOptions="Center"
-                                IsPlaying="False"
-                                IsLooping="False"
+                                Modifiers="{Binding Type, Converter={StaticResource LottieModifiersConverter}, ConverterParameter=AccentContent}"
+                                WidthRequest="24" HeightRequest="24"
+                                HorizontalOptions="Center" VerticalOptions="Center"
+                                IsPlaying="False" IsLooping="False"
                                 BackgroundColor="Transparent" />
                             <Label
                                 Grid.Column="1"

@@ -1,181 +1,191 @@
-using MessageAgent.Core.Enums;
 using MessageAgent.Core.Interfaces;
+using MessageAgent.Core.Models.Collections;
+using MessageAgent.Core.Models.ExtentionKinds;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace MessageAgent.Core.Models
+namespace MessageAgent.Core.Models;
+
+/// <summary>
+/// Notification content, associated collections, importance and read state.
+/// </summary>
+public class Message : IMessage, INotifyPropertyChanged
 {
+    private string title = string.Empty;
+    private MessageType type = MessageTypeConverter.Resolve("Error");
+    private string? description;
+    private bool isImportant;
+    private StatusCollection status = new();
+    private ImagesCollection images = new();
+    private MessageLinksCollection links = new();
+    private INotifyCollectionChanged? statusCollection;
+    private INotifyCollectionChanged? imagesCollection;
+    private INotifyCollectionChanged? linksCollection;
+    private bool isRead;
+
     /// <summary>
-    /// Notification content and its read state.
+    /// Initializes a message and observes its default collections.
     /// </summary>
-    public class Message : IMessage, INotifyPropertyChanged
+    public Message()
     {
-        private string title = string.Empty;
-        private MessageType type = MessageType.Error;
-        private string? description;
-        private StatusCollection status = new();
-        private ImagesCollection images = new();
-        private bool isRead;
-        private INotifyCollectionChanged? statusCollection;
-        private INotifyCollectionChanged? imagesCollection;
-        private readonly HashSet<Status> observedStatuses = new(ReferenceEqualityComparer.Instance);
-
-        public Guid Id { get; } = Guid.NewGuid();
-
-        public Message()
-        {
-            SubscribeStatusCollection(status);
-            SubscribeImagesCollection(images);
-        }
-
-        public string Title
-        {
-            get => title;
-            set => SetField(ref title, value ?? string.Empty);
-        }
-
-        public MessageType Type
-        {
-            get => type;
-            set => SetField(ref type, value);
-        }
-
-        public string? Description
-        {
-            get => description;
-            set => SetField(ref description, value);
-        }
-
-        /// <summary>
-        /// Observable collection of statuses. It can be populated directly in XAML
-        /// using the Message.Status property element without a List wrapper.
-        /// </summary>
-        public StatusCollection Status
-        {
-            get => status;
-            set
-            {
-                ArgumentNullException.ThrowIfNull(value);
-
-                if (ReferenceEquals(status, value)) return;
-
-                UnsubscribeStatusCollection();
-
-                status = value;
-
-                SubscribeStatusCollection(status);
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// Observable collection of image sources attached to the message.
-        /// </summary>
-        public ImagesCollection Images
-        {
-            get => images;
-            set
-            {
-                ArgumentNullException.ThrowIfNull(value);
-
-                if (ReferenceEquals(images, value)) return;
-
-                UnsubscribeImagesCollection();
-
-                images = value;
-
-                SubscribeImagesCollection(images);
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets whether the notification has been read.
-        /// MessageProvider sets this to true after its notification animation completes.
-        /// </summary>
-        public bool IsRead
-        {
-            get => isRead;
-            set => SetField(ref isRead, value);
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        private void SubscribeStatusCollection(StatusCollection collection)
-        {
-            statusCollection = collection;
-            statusCollection.CollectionChanged += StatusCollectionOnCollectionChanged;
-
-            SynchronizeStatusSubscriptions(collection);
-        }
-
-        private void SynchronizeStatusSubscriptions(IEnumerable<Status> statuses)
-        {
-            HashSet<Status> current = new (statuses, ReferenceEqualityComparer.Instance);
-
-            foreach (Status status in observedStatuses)
-            {
-                if (!current.Contains(status)) status.PropertyChanged -= StatusOnPropertyChanged;
-            }
-
-            foreach (Status status in current)
-            {
-                if (!observedStatuses.Contains(status)) status.PropertyChanged += StatusOnPropertyChanged;
-            }
-
-            observedStatuses.Clear();
-            observedStatuses.UnionWith(current);
-        }
-
-        private void StatusOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(global::MessageAgent.Core.Models.Status.SortOrder)) OnPropertyChanged(nameof(Status));
-        }
-
-        private void SubscribeImagesCollection(ImagesCollection collection)
-        {
-            imagesCollection = collection;
-            imagesCollection.CollectionChanged += ImagesCollectionOnCollectionChanged;
-        }
-
-        private void UnsubscribeStatusCollection()
-        {
-            if (statusCollection is not null) statusCollection.CollectionChanged -= StatusCollectionOnCollectionChanged;
-
-            foreach (Status status in observedStatuses) status.PropertyChanged -= StatusOnPropertyChanged;
-
-            observedStatuses.Clear();
-            statusCollection = null;
-        }
-
-        private void UnsubscribeImagesCollection()
-        {
-            if (imagesCollection is not null) imagesCollection.CollectionChanged -= ImagesCollectionOnCollectionChanged;
-
-            imagesCollection = null;
-        }
-
-        private void StatusCollectionOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            if (Status is not null) SynchronizeStatusSubscriptions(Status);
-
-            OnPropertyChanged(nameof(Status));
-        }
-
-        private void ImagesCollectionOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => OnPropertyChanged(nameof(Images));
-
-        private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-
-            field = value;
-
-            OnPropertyChanged(propertyName);
-
-            return true;
-        }
-
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        SubscribeCollection(ref statusCollection, status, StatusCollectionOnCollectionChanged);
+        SubscribeCollection(ref imagesCollection, images, ImagesCollectionOnCollectionChanged);
+        SubscribeCollection(ref linksCollection, links, LinksCollectionOnCollectionChanged);
     }
+
+    /// <summary>
+    /// Gets the immutable unique identifier of this message.
+    /// </summary>
+    public Guid Id { get; } = Guid.NewGuid();
+
+    /// <summary>
+    /// Gets or sets the message title.
+    /// </summary>
+    public string Title
+    {
+        get => title;
+        set => SetField(ref title, value ?? string.Empty);
+    }
+
+    /// <summary>
+    /// Gets or sets the message visual definition. Use a built-in name (Error/Alert/Info)
+    /// or reference a MessageType object from the application resources.
+    /// </summary>
+    [AllowNull]
+    public MessageType Type
+    {
+        get => type;
+        set => SetField(ref type, value ?? MessageTypeConverter.Resolve("Info"));
+    }
+
+    /// <summary>
+    /// Gets or sets the optional message description.
+    /// </summary>
+    public string? Description
+    {
+        get => description;
+        set => SetField(ref description, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether this message is marked as important.
+    /// </summary>
+    public bool IsImportant
+    {
+        get => isImportant;
+        set => SetField(ref isImportant, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the observable status collection. Its sorting rules are configured
+    /// through <c>StatusCollection.SortRules</c>.
+    /// </summary>
+    public StatusCollection Status
+    {
+        get => status;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+
+            if (ReferenceEquals(status, value)) return;
+
+            UnsubscribeCollection(ref statusCollection, StatusCollectionOnCollectionChanged);
+
+            status = value;
+
+            SubscribeCollection(ref statusCollection, status, StatusCollectionOnCollectionChanged);
+
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the observable image attachment collection.
+    /// </summary>
+    public ImagesCollection Images
+    {
+        get => images;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+
+            if (ReferenceEquals(images, value)) return;
+
+            UnsubscribeCollection(ref imagesCollection, ImagesCollectionOnCollectionChanged);
+
+            images = value;
+
+            SubscribeCollection(ref imagesCollection, images, ImagesCollectionOnCollectionChanged);
+
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the observable link collection. Its sorting rules are configured
+    /// through <c>MessageLinksCollection.SortRules</c>.
+    /// </summary>
+    public MessageLinksCollection Links
+    {
+        get => links;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (ReferenceEquals(links, value)) return;
+            UnsubscribeCollection(ref linksCollection, LinksCollectionOnCollectionChanged);
+            links = value;
+            SubscribeCollection(ref linksCollection, links, LinksCollectionOnCollectionChanged);
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether the notification has been read. MessageProvider sets this
+    /// after its notification animation completes.
+    /// </summary>
+    public bool IsRead
+    {
+        get => isRead;
+        set => SetField(ref isRead, value);
+    }
+
+    /// <inheritdoc />
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private static void SubscribeCollection(
+        ref INotifyCollectionChanged? observedCollection,
+        INotifyCollectionChanged collection,
+        NotifyCollectionChangedEventHandler handler)
+    {
+        observedCollection = collection;
+        observedCollection.CollectionChanged += handler;
+    }
+
+    private static void UnsubscribeCollection(ref INotifyCollectionChanged? observedCollection, NotifyCollectionChangedEventHandler handler)
+    {
+        if (observedCollection is not null) observedCollection.CollectionChanged -= handler;
+
+        observedCollection = null;
+    }
+
+    private void StatusCollectionOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => OnPropertyChanged(nameof(Status));
+
+    private void ImagesCollectionOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => OnPropertyChanged(nameof(Images));
+
+    private void LinksCollectionOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => OnPropertyChanged(nameof(Links));
+
+    private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+
+        field = value;
+
+        OnPropertyChanged(propertyName);
+
+        return true;
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

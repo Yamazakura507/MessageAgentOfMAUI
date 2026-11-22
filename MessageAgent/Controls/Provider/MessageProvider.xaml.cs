@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using LottieAgent.Interfaces;
-using MessageAgent.Core.Enums;
+using MessageAgent.Core.Enums.Message;
 using MessageAgent.Core.Extensions;
 using MessageAgent.Core.Models;
 using MessageAgent.Services;
@@ -17,6 +17,7 @@ namespace MessageAgent.Controls.Provider;
 public partial class MessageProvider : ContentView
 {
     private const int NoLengthLimit = -1;
+    private const int DefaultStatusLenght = 5;
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan LongPressDuration = TimeSpan.FromMilliseconds(650);
 
@@ -37,55 +38,92 @@ public partial class MessageProvider : ContentView
 
     private readonly NativeLongPressGesture nativeLongPressGesture;
 
-#if WINDOWS
+    #if WINDOWS
     private bool ignoreNextLottieTap;
-#endif
+    #endif
 
+    /// <summary>
+    /// Bindable property for <see cref="Message"/>.
+    /// </summary>
     public static readonly BindableProperty MessageProperty =
-        BindableProperty.Create(nameof(Message), typeof(Message), typeof(MessageProvider),
-            default(Message), propertyChanged: OnMessageChanged);
+        BindableProperty.Create(nameof(Message), typeof(Message), typeof(MessageProvider), default(Message), propertyChanged: OnMessageChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="MaxTitleLength"/>.
+    /// </summary>
     public static readonly BindableProperty MaxTitleLengthProperty =
-        BindableProperty.Create(nameof(MaxTitleLength), typeof(int), typeof(MessageProvider),
-            NoLengthLimit,
+        BindableProperty.Create(nameof(MaxTitleLength), typeof(int), typeof(MessageProvider), NoLengthLimit,
             validateValue: (_, value) => value is int length && (length == NoLengthLimit || length >= 3),
             propertyChanged: OnMaxTitleLengthChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="MaxStatusesOnLabel"/>.
+    /// </summary>
     public static readonly BindableProperty MaxStatusesOnLabelProperty =
-        BindableProperty.Create(
-            nameof(MaxStatusesOnLabel),
-            typeof(int),
-            typeof(MessageProvider),
-            4,
+        BindableProperty.Create(nameof(MaxStatusesOnLabel), typeof(int), typeof(MessageProvider), DefaultStatusLenght,
             validateValue: (_, value) => value is int count && count >= 0,
             propertyChanged: OnMaxStatusesOnLabelChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="MessageShowType"/>.
+    /// </summary>
     public static readonly BindableProperty MessageShowTypeProperty =
-        BindableProperty.Create(nameof(MessageShowType), typeof(MessageShowType), typeof(MessageProvider),
-            MessageShowType.ShowLableAlways, propertyChanged: OnMessageShowTypeChanged);
+        BindableProperty.Create(nameof(MessageShowType), typeof(MessageShowType), typeof(MessageProvider), MessageShowType.ShowLableAlways, propertyChanged: OnMessageShowTypeChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="Timeout"/>.
+    /// </summary>
     public static readonly BindableProperty TimeoutProperty =
-        BindableProperty.Create(nameof(Timeout), typeof(TimeSpan), typeof(MessageProvider),
-            DefaultTimeout,
+        BindableProperty.Create(nameof(Timeout), typeof(TimeSpan), typeof(MessageProvider), DefaultTimeout,
             validateValue: (_, value) => value is TimeSpan timeout && timeout > TimeSpan.Zero,
             propertyChanged: OnTimeoutChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="LabelEffect"/>.
+    /// </summary>
     public static readonly BindableProperty LabelEffectProperty =
         BindableProperty.Create(nameof(LabelEffect), typeof(MessageLabelEffect), typeof(MessageProvider), MessageLabelEffect.FadeScale);
 
+    /// <summary>
+    /// Bindable property for <see cref="LabelShape"/>.
+    /// </summary>
+    public static readonly BindableProperty LabelShapeProperty =
+        BindableProperty.Create(nameof(LabelShape), typeof(MessageLabelShape), typeof(MessageProvider), MessageLabelShape.Block, propertyChanged: OnLabelShapeChanged);
+
+    /// <summary>
+    /// Gets the Lottie JSON loader used by the notification animation.
+    /// </summary>
     public ILottieJsonLoader JsonLoader { get; }
+    /// <summary>
+    /// Gets the modifier processor used by the notification animation.
+    /// </summary>
     public ILottieModifierProcessor ModifierProcessor { get; }
 
+    /// <summary>
+    /// Gets the ordered subset of statuses currently displayed on the compact label.
+    /// </summary>
     public IReadOnlyList<StatusPresentationItem> VisibleStatuses => visibleStatuses;
+    /// <summary>
+    /// Gets whether the current message has details that can be opened.
+    /// </summary>
     public bool HasDetails => hasDetails;
+    /// <summary>
+    /// Gets whether some statuses are hidden behind the overflow action.
+    /// </summary>
     public bool HasStatusOverflow => hasStatusOverflow;
 
+    /// <summary>
+    /// Gets or sets the message presented by this control.
+    /// </summary>
     public Message? Message
     {
         get => (Message?)GetValue(MessageProperty);
         set => SetValue(MessageProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the maximum title length; null disables truncation.
+    /// </summary>
     public int? MaxTitleLength
     {
         get
@@ -107,18 +145,27 @@ public partial class MessageProvider : ContentView
         set => SetValue(MaxStatusesOnLabelProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the label visibility and interaction mode.
+    /// </summary>
     public MessageShowType MessageShowType
     {
         get => (MessageShowType)GetValue(MessageShowTypeProperty);
         set => SetValue(MessageShowTypeProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the auto-hide delay for click-to-show mode.
+    /// </summary>
     public TimeSpan Timeout
     {
         get => (TimeSpan)GetValue(TimeoutProperty);
         set => SetValue(TimeoutProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the visual transition used when the label appears or disappears.
+    /// </summary>
     public MessageLabelEffect LabelEffect
     {
         get => (MessageLabelEffect)GetValue(LabelEffectProperty);
@@ -126,7 +173,16 @@ public partial class MessageProvider : ContentView
     }
 
     /// <summary>
-    /// Parameterless constructor is used by XAML. Dependencies are resolved from the application container.
+    /// Geometry of the compact label. Block preserves the original rounded rectangle.
+    /// </summary>
+    public MessageLabelShape LabelShape
+    {
+        get => (MessageLabelShape)GetValue(LabelShapeProperty);
+        set => SetValue(LabelShapeProperty, value);
+    }
+
+    /// <summary>
+    /// Initializes the provider for XAML use. Dependencies are resolved from the application service container.
     /// </summary>
     public MessageProvider() : this(
         MauiServiceProvider.GetRequiredService<ILottieJsonLoader>(),
@@ -139,6 +195,15 @@ public partial class MessageProvider : ContentView
 
     }
 
+    /// <summary>
+    /// Initializes the provider with explicit rendering, presentation and interaction services.
+    /// </summary>
+    /// <param name="jsonLoader">Loads Lottie assets.</param>
+    /// <param name="modifierProcessor">Applies Lottie modifiers.</param>
+    /// <param name="presentationService">Calculates the visible message presentation.</param>
+    /// <param name="labelAnimator">Animates the compact label.</param>
+    /// <param name="autoHideService">Controls the auto-hide timer.</param>
+    /// <param name="detailsPageFactory">Creates the message details page.</param>
     public MessageProvider(
         ILottieJsonLoader jsonLoader,
         ILottieModifierProcessor modifierProcessor,
@@ -159,9 +224,9 @@ public partial class MessageProvider : ContentView
         nativeLongPressGesture = new NativeLongPressGesture(LottieProvider, OnLottieLongPressed, LongPressDuration);
         LottieProvider.AnimationFailed += exception => System.Diagnostics.Debug.WriteLine(exception);
         autoHideService.Elapsed += AutoHideServiceOnElapsed;
-        BrMessage.IsVisible = false;
-        BrMessage.Opacity = 1;
     }
+
+    private static void OnLabelShapeChanged(BindableObject bindable, object oldValue, object newValue) => ((MessageProvider)bindable).UpdatePresentation();
 
     private static void OnMessageChanged(BindableObject bindable, object oldValue, object newValue)
     {
@@ -239,7 +304,7 @@ public partial class MessageProvider : ContentView
         _ = SetLabelVisibilityAsync(shouldBeVisible, animated);
     }
 
-    private async Task SetLabelVisibilityAsync(bool visible, bool animated = true)
+    private async ValueTask SetLabelVisibilityAsync(bool visible, bool animated = true)
     {
         if (Message is null || MessageShowType == MessageShowType.HideLableAlways) visible = false;
         else if (MessageShowType == MessageShowType.ShowLableAlways) visible = true;
@@ -306,18 +371,18 @@ public partial class MessageProvider : ContentView
     {
         if (isStatusOverflowOpened || Message is null || !hasStatusOverflow) return;
 
-        List<Status> orderedStatuses = Message.Status.Sort(distinct: true);
+        List<Status> orderedStatuses = Message.Status.Distinct<Status>(ReferenceEqualityComparer.Instance).ToList();
 
         if (orderedStatuses.Count == 0) return;
 
-        Page? page = VisualTreeGeometry.FindHostPage(this);
+        Page? page = this.FindHostPage();
 
         if (page is null) return;
 
         isStatusOverflowOpened = true;
         try
         {
-            Rect anchorBounds = VisualTreeGeometry.GetBoundsRelativeToPage(StatusMoreButton, page);
+            Rect anchorBounds = StatusMoreButton.GetBoundsRelativeToPage(page);
 
             await page.Navigation.PushModalAsync(new StatusOverflowPage(orderedStatuses, Message.Type.GetAccentColor(), anchorBounds), animated: false);
         }
@@ -410,7 +475,7 @@ public partial class MessageProvider : ContentView
 
         if (!force && !HasDetails) return;
 
-        Page? page = VisualTreeGeometry.FindHostPage(this);
+        Page? page = this.FindHostPage();
 
         if (page is null) return;
 
@@ -454,6 +519,7 @@ public partial class MessageProvider : ContentView
         _ = OpenDetailsAsync(force: MessageShowType == MessageShowType.HideLableAlways);
     }
 
+    /// <inheritdoc />
     protected override void OnParentSet()
     {
         base.OnParentSet();

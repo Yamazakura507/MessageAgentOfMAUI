@@ -8,6 +8,11 @@ namespace MessageAgent.Services.Extensions;
 /// </summary>
 internal static class StatusActionPaletteFactory
 {
+    /// <summary>
+    /// Creates a coordinated action palette from a seed color.
+    /// </summary>
+    /// <param name="sourceColor">The source color used to derive the action palette.</param>
+    /// <returns>A set of surface, foreground and animation colors.</returns>
     public static StatusActionPalette Create(this Color sourceColor)
     {
         StatusVisualPalette surface = sourceColor.CreateStatusPalette();

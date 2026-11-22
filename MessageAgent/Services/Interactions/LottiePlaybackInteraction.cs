@@ -1,7 +1,5 @@
 using LottieAgent.Controls;
 
-
-
 #if WINDOWS
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
@@ -38,8 +36,17 @@ internal sealed class LottiePlaybackInteraction : IDisposable
     private UIHoverGestureRecognizer? hoverRecognizer;
     #endif
 
+    /// <summary>
+    /// Gets a value indicating whether the interaction is currently active.
+    /// </summary>
     public bool IsActive => isActive;
 
+    /// <summary>
+    /// Initializes the interaction controller and attaches native input handlers.
+    /// </summary>
+    /// <param name="animation">The Lottie view whose playback responds to interaction.</param>
+    /// <param name="interactionTarget">The visual element that receives native input, or <see langword="null"/> to use <paramref name="animation"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="animation"/> is <see langword="null"/>.</exception>
     public LottiePlaybackInteraction(LottieView animation, VisualElement? interactionTarget = null)
     {
         this.animation = animation ?? throw new ArgumentNullException(nameof(animation));
@@ -49,6 +56,10 @@ internal sealed class LottiePlaybackInteraction : IDisposable
         AttachNativeInput();
     }
 
+    /// <summary>
+    /// Activates or deactivates interactive playback.
+    /// </summary>
+    /// <param name="active"><see langword="true"/> to enable looping and start playback; otherwise, disables looping and allows the current iteration to finish.</param>
     public void SetActive(bool active)
     {
         if (isDisposed || isActive == active) return;
@@ -184,6 +195,7 @@ internal sealed class LottiePlaybackInteraction : IDisposable
         nativeView = null;
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         if (isDisposed) return;

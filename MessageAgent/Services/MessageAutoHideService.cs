@@ -9,8 +9,12 @@ public sealed class MessageAutoHideService : IMessageAutoHideService
 {
     private IDispatcherTimer? timer;
 
+    /// <summary>
+    /// Raised when the running auto-hide timer expires.
+    /// </summary>
     public event EventHandler? Elapsed;
 
+    /// <inheritdoc />
     public void Start(IDispatcher dispatcher, TimeSpan timeout)
     {
         ArgumentNullException.ThrowIfNull(dispatcher);
@@ -26,6 +30,7 @@ public sealed class MessageAutoHideService : IMessageAutoHideService
         timer.Start();
     }
 
+    /// <inheritdoc />
     public void Stop() => timer?.Stop();
 
     private void OnTimerElapsed(object? sender, EventArgs e)
@@ -35,6 +40,7 @@ public sealed class MessageAutoHideService : IMessageAutoHideService
         Elapsed?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         if (timer is null) return;

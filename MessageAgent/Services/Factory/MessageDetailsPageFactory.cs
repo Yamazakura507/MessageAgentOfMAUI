@@ -4,8 +4,13 @@ using MessageAgent.Services.Interfaces;
 
 namespace MessageAgent.Services.Factory;
 
+/// <summary>
+/// Creates message details pages using the application dependency-injection container.
+/// </summary>
+/// <param name="services">The application service provider.</param>
 public sealed class MessageDetailsPageFactory(IServiceProvider services) : IMessageDetailsPageFactory
 {
+    /// <inheritdoc />
     public MessageDetailsPage Create(Message message)
     {
         ArgumentNullException.ThrowIfNull(message);

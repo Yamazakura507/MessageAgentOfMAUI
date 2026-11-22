@@ -7,9 +7,21 @@ namespace MessageAgent.Controls.Provider;
 /// </summary>
 public partial class StatusDescriptionPage : AnimatedModalPage
 {
+    /// <summary>
+    /// Gets the status title displayed by this description sheet.
+    /// </summary>
     public string DescriptionTitle { get; }
+
+    /// <summary>
+    /// Gets the explanatory status text.
+    /// </summary>
     public string DescriptionText { get; }
 
+    /// <summary>
+    /// Initializes the sheet with a title and description.
+    /// </summary>
+    /// <param name="title">The status title.</param>
+    /// <param name="description">The status description.</param>
     public StatusDescriptionPage(string title, string description)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
@@ -22,6 +34,7 @@ public partial class StatusDescriptionPage : AnimatedModalPage
         BindingContext = this;
     }
 
+    /// <inheritdoc />
     protected override async void OnAppearing()
     {
         base.OnAppearing();
@@ -38,6 +51,7 @@ public partial class StatusDescriptionPage : AnimatedModalPage
 
     private void OnCloseClicked(object? sender, EventArgs e) => _ = CloseAsync();
 
+    /// <inheritdoc />
     protected override Task AnimateOutAsync() => Task.WhenAll(
         Overlay.FadeToAsync(0, 140, Easing.CubicIn),
         BottomSheet.TranslateToAsync(0, BottomSheet.Height, 180, Easing.CubicIn));

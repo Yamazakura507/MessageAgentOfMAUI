@@ -25,21 +25,36 @@ public partial class StatusActionButton : ContentView
     private DateTime lastTapUtc = DateTime.MinValue;
     private DateTime lastLongPressUtc = DateTime.MinValue;
 
+    /// <summary>
+    /// Raised after a single tap on the action badge.
+    /// </summary>
     public event EventHandler? Clicked;
+    /// <summary>
+    /// Raised after a double tap or a native long press.
+    /// </summary>
     public event EventHandler? DoubleOrLongPressed;
 
+    /// <summary>
+    /// Bindable property for <see cref="Text"/>.
+    /// </summary>
     public static readonly BindableProperty TextProperty =
-        BindableProperty.Create(nameof(Text), typeof(string), typeof(StatusActionButton), "...",
-            propertyChanged: OnTextChanged);
+        BindableProperty.Create(nameof(Text), typeof(string), typeof(StatusActionButton), "...", propertyChanged: OnTextChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="ToolTipText"/>.
+    /// </summary>
     public static readonly BindableProperty ToolTipTextProperty =
-        BindableProperty.Create(nameof(ToolTipText), typeof(string), typeof(StatusActionButton),
-            default(string), propertyChanged: OnToolTipTextChanged);
+        BindableProperty.Create(nameof(ToolTipText), typeof(string), typeof(StatusActionButton), default(string), propertyChanged: OnToolTipTextChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="AnimationSource"/>.
+    /// </summary>
     public static readonly BindableProperty AnimationSourceProperty =
-        BindableProperty.Create(nameof(AnimationSource), typeof(string), typeof(StatusActionButton),
-            default(string), propertyChanged: OnAnimationSourceChanged);
+        BindableProperty.Create(nameof(AnimationSource), typeof(string), typeof(StatusActionButton), default(string), propertyChanged: OnAnimationSourceChanged);
 
+    /// <summary>
+    /// Gets or sets the text displayed when the action does not use a Lottie asset.
+    /// </summary>
     public string Text
     {
         get => (string)GetValue(TextProperty);
@@ -64,6 +79,9 @@ public partial class StatusActionButton : ContentView
         set => SetValue(AnimationSourceProperty, value);
     }
 
+    /// <summary>
+    /// Initializes the action badge and its native interaction handlers.
+    /// </summary>
     public StatusActionButton()
     {
         InitializeComponent();
@@ -241,6 +259,7 @@ public partial class StatusActionButton : ContentView
         }
     }
 
+    /// <inheritdoc />
     protected override void OnParentSet()
     {
         base.OnParentSet();

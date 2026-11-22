@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MessageAgent.Core.Models;
+using MessageAgent.Core.Models.VisualValues;
 using MessageAgent.Services.Interfaces;
 using SkiaSharp;
 
@@ -13,20 +14,21 @@ public sealed class StatusBorderColorResolver : IStatusBorderColorResolver
 {
     private static readonly HttpClient HttpClient = new();
 
+    /// <inheritdoc />
     public async ValueTask<Color?> ResolveVisualColorAsync(Status status, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(status);
 
         switch (status.Value)
         {
-            case ImageValueStatus { Source: FontImageSource fontSource } when fontSource.Color is not null: return fontSource.Color;
-            case ImageValueStatus { Source: not null } image:
+            case ImageVisualValue { Source: FontImageSource fontSource } when fontSource.Color is not null: return fontSource.Color;
+            case ImageVisualValue { Source: not null } image:
             {
                 byte[]? bytes = await ReadImageBytesAsync(image.Source, cancellationToken);
 
                 return bytes is null ? null : ExtractDominantImageColor(bytes);
             }
-            case LottieValueStatus lottie:
+            case LottieVisualValue lottie:
             {
                 byte[]? bytes = await ReadLottieBytesAsync(lottie.Source, cancellationToken);
 
@@ -52,7 +54,6 @@ public sealed class StatusBorderColorResolver : IStatusBorderColorResolver
 
                     string normalized = fileName.Replace('/', '\\');
                     string scaledName = $"{Path.GetFileNameWithoutExtension(normalized)}.scale-100{Path.GetExtension(normalized)}";
-
                     string[] diskCandidates =
                     [
                         Path.Combine(AppContext.BaseDirectory, normalized),
@@ -97,8 +98,7 @@ public sealed class StatusBorderColorResolver : IStatusBorderColorResolver
 
                     return null;
                 }
-                case UriImageSource uriSource when uriSource.Uri is not null:
-                    return await HttpClient.GetByteArrayAsync(uriSource.Uri, cancellationToken);
+                case UriImageSource uriSource when uriSource.Uri is not null: return await HttpClient.GetByteArrayAsync(uriSource.Uri, cancellationToken);
                 case StreamImageSource streamSource when streamSource.Stream is not null:
                 {
                     await using Stream? stream = await streamSource.Stream(cancellationToken);
@@ -111,7 +111,6 @@ public sealed class StatusBorderColorResolver : IStatusBorderColorResolver
 
                     return memory.ToArray();
                 }
-
                 default: return null;
             }
         }
@@ -148,14 +147,9 @@ public sealed class StatusBorderColorResolver : IStatusBorderColorResolver
 
                     int key = ((pixel.Red >> 4) << 8) | ((pixel.Green >> 4) << 4) | (pixel.Blue >> 4);
 
-                    if (buckets.TryGetValue(key, out var bucket))
-                    {
-                        buckets[key] = (bucket.Count + 1, bucket.Red + pixel.Red, bucket.Green + pixel.Green, bucket.Blue + pixel.Blue);
-                    }
-                    else
-                    {
-                        buckets[key] = (1, pixel.Red, pixel.Green, pixel.Blue);
-                    }
+                    buckets[key] = buckets.TryGetValue(key, out (int Count, long Red, long Green, long Blue) bucket)
+                        ? (bucket.Count + 1, bucket.Red + pixel.Red, bucket.Green + pixel.Green, bucket.Blue + pixel.Blue)
+                        : (1, pixel.Red, pixel.Green, pixel.Blue);
                 }
             }
 

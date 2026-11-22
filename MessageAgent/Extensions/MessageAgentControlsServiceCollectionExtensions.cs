@@ -15,16 +15,22 @@ namespace MessageAgent.Extensions;
 /// </summary>
 public static class MessageAgentControlsServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers MessageAgent, LottieAgent and all rendering services.
+    /// </summary>
+    /// <param name="services">The application service collection.</param>
+    /// <returns>The supplied collection for chained registration.</returns>
     public static IServiceCollection AddMessageAgentControls(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddLottieAgent();
 
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<IValueStatusHandler, ImageValueStatusHandler>());
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<IValueStatusHandler, LottieValueStatusHandler>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IVisualValueHandler, ImageVisualValueHandler>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IVisualValueHandler, LottieVisualValueHandler>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IVisualValueHandler, ElementVisualValueHandler>());
 
-        services.TryAddSingleton<IValueStatusViewFactory, ValueStatusViewFactory>();
+        services.TryAddSingleton<IVisualValueViewFactory, VisualValueViewFactory>();
         services.TryAddSingleton<IStatusBorderColorResolver, StatusBorderColorResolver>();
         services.TryAddSingleton<IMessagePresentationService, MessagePresentationService>();
 

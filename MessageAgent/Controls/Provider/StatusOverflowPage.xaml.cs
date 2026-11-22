@@ -19,11 +19,29 @@ public partial class StatusOverflowPage : AnimatedModalPage
     private readonly Rect anchorBounds;
     private readonly LottiePlaybackInteraction closeAnimationInteraction;
 
+    /// <summary>
+    /// Gets the statuses shown in the overflow popup, in their display order.
+    /// </summary>
     public IReadOnlyList<Status> Statuses { get; }
+    /// <summary>
+    /// Gets the accent color used by the popup.
+    /// </summary>
     public Color AccentColor { get; }
+    /// <summary>
+    /// Gets the theme-aware popup surface color.
+    /// </summary>
     public Color PanelBackgroundColor { get; }
+    /// <summary>
+    /// Gets the theme-aware popup foreground color.
+    /// </summary>
     public Color ForegroundColor { get; }
 
+    /// <summary>
+    /// Initializes the popup anchored to the status overflow action.
+    /// </summary>
+    /// <param name="statuses">The statuses to display.</param>
+    /// <param name="accentColor">The parent message accent color.</param>
+    /// <param name="anchorBounds">The anchor bounds relative to the containing page.</param>
     public StatusOverflowPage(IEnumerable<Status> statuses, Color accentColor, Rect anchorBounds)
     {
         ArgumentNullException.ThrowIfNull(statuses);
@@ -50,6 +68,7 @@ public partial class StatusOverflowPage : AnimatedModalPage
         Overlay.SizeChanged += OnPopupSizeChanged;
     }
 
+    /// <inheritdoc />
     protected override async void OnAppearing()
     {
         base.OnAppearing();
@@ -102,12 +121,14 @@ public partial class StatusOverflowPage : AnimatedModalPage
 
     private async void CloseButtonOnClicked(object? sender, EventArgs e) => await CloseAsync();
 
+    /// <inheritdoc />
     protected override void OnDisappearing()
     {
         closeAnimationInteraction.Dispose();
         base.OnDisappearing();
     }
 
+    /// <inheritdoc />
     protected override Task AnimateOutAsync() => Task.WhenAll(
         PopupPanel.FadeToAsync(0, 90, Easing.CubicIn),
         PopupPanel.ScaleToAsync(0.97, 110, Easing.CubicIn));

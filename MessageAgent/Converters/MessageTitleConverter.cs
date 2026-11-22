@@ -1,9 +1,13 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace MessageAgent.Converters
 {
+    /// <summary>
+    /// Truncates a message title to an optional maximum length.
+    /// </summary>
     public sealed class MessageTitleConverter : IMultiValueConverter
     {
+        /// <inheritdoc />
         public object Convert(object[] values, Type targetType, object? parameter, CultureInfo culture)
         {
             string title = values.FirstOrDefault() as string ?? string.Empty;
@@ -13,6 +17,7 @@ namespace MessageAgent.Converters
 
             return limit == 3 ? "..." : title[..(limit - 3)] + "...";
         }
+        /// <inheritdoc />
         public object[] ConvertBack(object? value, Type[] targetTypes, object? parameter, CultureInfo culture) => throw new NotSupportedException();
     }
 }

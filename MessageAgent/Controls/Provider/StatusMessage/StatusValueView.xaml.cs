@@ -1,5 +1,5 @@
 using System.ComponentModel;
-using MessageAgent.Core.Enums;
+using MessageAgent.Core.Enums.Status;
 using MessageAgent.Core.Extensions;
 using MessageAgent.Core.Models;
 using MessageAgent.Services;
@@ -15,7 +15,7 @@ namespace MessageAgent.Controls.Provider;
 /// </summary>
 public partial class StatusValueView : ContentView
 {
-    private readonly IValueStatusViewFactory viewFactory;
+    private readonly IVisualValueViewFactory viewFactory;
     private readonly IStatusBorderColorResolver borderColorResolver;
     private bool isDescriptionOpening;
     private int borderColorRequestVersion;
@@ -24,6 +24,9 @@ public partial class StatusValueView : ContentView
     private NativeLongPressGesture? descriptionLongPressGesture;
     #endif
 
+    /// <summary>
+    /// Bindable property for <see cref="Status"/>.
+    /// </summary>
     public static readonly BindableProperty StatusProperty =
         BindableProperty.Create(
             nameof(Status),
@@ -32,38 +35,33 @@ public partial class StatusValueView : ContentView
             default(Status),
             propertyChanged: OnStatusChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="AlwaysShowTitle"/>.
+    /// </summary>
     public static readonly BindableProperty AlwaysShowTitleProperty =
-        BindableProperty.Create(
-            nameof(AlwaysShowTitle),
-            typeof(bool),
-            typeof(StatusValueView),
-            false,
-            propertyChanged: OnPresentationPropertyChanged);
+        BindableProperty.Create(nameof(AlwaysShowTitle), typeof(bool), typeof(StatusValueView), false, propertyChanged: OnPresentationPropertyChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="ShowTitleOverride"/>.
+    /// </summary>
     public static readonly BindableProperty ShowTitleOverrideProperty =
-        BindableProperty.Create(
-            nameof(ShowTitleOverride),
-            typeof(bool?),
-            typeof(StatusValueView),
-            default(bool?),
-            propertyChanged: OnPresentationPropertyChanged);
+        BindableProperty.Create(nameof(ShowTitleOverride), typeof(bool?), typeof(StatusValueView), default(bool?), propertyChanged: OnPresentationPropertyChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="MessageAccentColor"/>.
+    /// </summary>
     public static readonly BindableProperty MessageAccentColorProperty =
-        BindableProperty.Create(
-            nameof(MessageAccentColor),
-            typeof(Color),
-            typeof(StatusValueView),
-            Colors.Gray,
-            propertyChanged: OnAccentColorChanged);
+        BindableProperty.Create(nameof(MessageAccentColor), typeof(Color), typeof(StatusValueView), Colors.Gray, propertyChanged: OnAccentColorChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="MaxTitleWidth"/>.
+    /// </summary>
     public static readonly BindableProperty MaxTitleWidthProperty =
-        BindableProperty.Create(
-            nameof(MaxTitleWidth),
-            typeof(double),
-            typeof(StatusValueView),
-            double.PositiveInfinity,
-            propertyChanged: OnTitleWidthChanged);
+        BindableProperty.Create(nameof(MaxTitleWidth), typeof(double), typeof(StatusValueView), double.PositiveInfinity, propertyChanged: OnTitleWidthChanged);
 
+    /// <summary>
+    /// Gets or sets the status whose visual value and title are displayed.
+    /// </summary>
     public Status? Status
     {
         get => (Status?)GetValue(StatusProperty);
@@ -110,13 +108,18 @@ public partial class StatusValueView : ContentView
     /// Constructor used when this control is created from XAML.
     /// </summary>
     public StatusValueView() : this(
-        MauiServiceProvider.GetRequiredService<IValueStatusViewFactory>(),
+        MauiServiceProvider.GetRequiredService<IVisualValueViewFactory>(),
         MauiServiceProvider.GetRequiredService<IStatusBorderColorResolver>())
     {
 
     }
 
-    public StatusValueView(IValueStatusViewFactory viewFactory, IStatusBorderColorResolver borderColorResolver)
+    /// <summary>
+    /// Initializes the status view with its visual-value factory and color resolver.
+    /// </summary>
+    /// <param name="viewFactory">Creates views for polymorphic visual values.</param>
+    /// <param name="borderColorResolver">Resolves an optional color from the visual value.</param>
+    public StatusValueView(IVisualValueViewFactory viewFactory, IStatusBorderColorResolver borderColorResolver)
     {
         this.viewFactory = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
         this.borderColorResolver = borderColorResolver ?? throw new ArgumentNullException(nameof(borderColorResolver));
@@ -305,11 +308,11 @@ public partial class StatusValueView : ContentView
         #endif
     }
 
-    private async Task ShowDescriptionAsync()
+    private async ValueTask ShowDescriptionAsync()
     {
         if (isDescriptionOpening || string.IsNullOrWhiteSpace(Status?.Description)) return;
 
-        Page? page = VisualTreeGeometry.FindHostPage(this);
+        Page? page = this.FindHostPage();
 
         if (page is null) return;
 
@@ -325,6 +328,7 @@ public partial class StatusValueView : ContentView
         }
     }
 
+    /// <inheritdoc />
     protected override void OnParentSet()
     {
         base.OnParentSet();

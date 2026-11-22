@@ -17,6 +17,9 @@
             <converters:MessageTypeToLottieModifiersConverter x:Key="LottieModifiersConverter" />
             <converters:MessageTitleConverter x:Key="MessageTitleConverter" />
             <converters:ReadStateConverter x:Key="ReadStateConverter" />
+            <converters:MessageAgentImageSourceConverter x:Key="MessageAgentImageSourceConverter" />
+            <converters:MessageLabelShapeConverter x:Key="MessageLabelShapeConverter" />
+            <converters:MessageLabelShapePaddingConverter x:Key="MessageLabelShapePaddingConverter" />
         </ResourceDictionary>
     </ContentView.Resources>
 
@@ -24,7 +27,7 @@
         <controls:LottieView
             x:Name="LottieProvider"
             Grid.Column="0"
-            Source="Lotties/circleLable.json"
+            Source="{Binding Message.Type.NotificationAnimationSource, Source={x:Reference Root}}"
             JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
             ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
             Modifiers="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource LottieModifiersConverter}}"
@@ -45,30 +48,35 @@
         <Border
             x:Name="BrMessage"
             Grid.Column="1"
-            Padding="7,4"
+            Padding="{Binding LabelShape, Source={x:Reference Root}, Converter={StaticResource MessageLabelShapePaddingConverter}}"
             Margin="2,0,0,0"
             Stroke="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource AccentColorConverter}}"
             StrokeThickness="1"
             BackgroundColor="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource BackgroundColorConverter}, ConverterParameter=Background}"
+            StrokeShape="{Binding LabelShape, Source={x:Reference Root}, Converter={StaticResource MessageLabelShapeConverter}}"
             VerticalOptions="Center"
             IsVisible="False"
             SizeChanged="UpdatePresentationOnSizeChanged">
-            <Border.StrokeShape>
-                <RoundRectangle CornerRadius="10" />
-            </Border.StrokeShape>
 
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
-                <Image
-                    Grid.Column="0"
-                    WidthRequest="15"
-                    HeightRequest="15"
-                    Margin="0,0,3,0"
-                    Aspect="AspectFit"
-                    Source="{Binding Message.IsRead, Source={x:Reference Root}, Converter={StaticResource ReadStateConverter}, ConverterParameter=Image}">  
-                    <Image.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="MessageLabelOnTapped" />
-                    </Image.GestureRecognizers>
-                </Image>
+                <HorizontalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
+                    <Image
+                        WidthRequest="15"
+                        HeightRequest="15"
+                        Aspect="AspectFit"
+                        Source="{Binding Message.IsRead, Source={x:Reference Root}, Converter={StaticResource ReadStateConverter}, ConverterParameter=Image}">
+                        <Image.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="MessageLabelOnTapped" />
+                        </Image.GestureRecognizers>
+                    </Image>
+                    <Image
+                        WidthRequest="15"
+                        HeightRequest="15"
+                        Aspect="AspectFit"
+                        IsVisible="{Binding Message.IsImportant, Source={x:Reference Root}}"
+                        Source="{Binding Message.IsImportant, Source={x:Reference Root}, Converter={StaticResource MessageAgentImageSourceConverter}, ConverterParameter=MessageAgent.Images.Important}"
+                        ToolTipProperties.Text="Важное сообщение" />
+                </HorizontalStackLayout>
 
                 <Label
                     x:Name="TitleLabel"
@@ -121,7 +129,6 @@
                         Clicked="StatusMoreButtonOnClicked" />
                 </HorizontalStackLayout>
             </Grid>
-
         </Border>
     </Grid>
 </ContentView>

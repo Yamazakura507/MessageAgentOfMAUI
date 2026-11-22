@@ -1,3 +1,8 @@
+#if WINDOWS
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+#endif
+
 namespace MessageAgent.Services.Extensions;
 
 /// <summary>
@@ -5,6 +10,11 @@ namespace MessageAgent.Services.Extensions;
 /// </summary>
 internal static class ToolTipHelper
 {
+    /// <summary>
+    /// Sets or clears a platform tooltip on the supplied visual element.
+    /// </summary>
+    /// <param name="element">The visual element receiving the tooltip.</param>
+    /// <param name="text">The tooltip text, or null to clear the tooltip.</param>
     public static void SetText(VisualElement element, string? text)
     {
         ArgumentNullException.ThrowIfNull(element);
@@ -14,9 +24,9 @@ internal static class ToolTipHelper
         ToolTipProperties.SetText(element, value);
 
         #if WINDOWS
-        if (element.Handler?.PlatformView is Microsoft.UI.Xaml.DependencyObject nativeElement)
+        if (element.Handler?.PlatformView is DependencyObject nativeElement)
         {
-            Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(nativeElement, string.IsNullOrWhiteSpace(value) ? null : value);
+            ToolTipService.SetToolTip(nativeElement, string.IsNullOrWhiteSpace(value) ? null : value);
         }
         #endif
     }

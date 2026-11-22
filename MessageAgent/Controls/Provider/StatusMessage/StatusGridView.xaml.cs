@@ -1,5 +1,4 @@
 using System.Collections.Specialized;
-using System.ComponentModel;
 using MessageAgent.Core.Extensions;
 using MessageAgent.Core.Models;
 using MessageAgent.Core.Views;
@@ -17,38 +16,55 @@ public partial class StatusGridView : ContentView
     private bool showAll;
     private bool isRebuilding;
     private INotifyCollectionChanged? observedCollection;
-    private readonly HashSet<Status> observedStatuses = new(ReferenceEqualityComparer.Instance);
 
+    /// <summary>
+    /// Bindable property for <see cref="Items"/>.
+    /// </summary>
     public static readonly BindableProperty ItemsProperty =
-        BindableProperty.Create(nameof(Items), typeof(IEnumerable<Status>), typeof(StatusGridView),
-            default(IEnumerable<Status>), propertyChanged: OnItemsChanged);
+        BindableProperty.Create(nameof(Items), typeof(IEnumerable<Status>), typeof(StatusGridView), default(IEnumerable<Status>), propertyChanged: OnItemsChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="AccentColor"/>.
+    /// </summary>
     public static readonly BindableProperty AccentColorProperty =
-        BindableProperty.Create(nameof(AccentColor), typeof(Color), typeof(StatusGridView),
-            Colors.Gray, propertyChanged: OnAccentColorChanged);
+        BindableProperty.Create(nameof(AccentColor), typeof(Color), typeof(StatusGridView), Colors.Gray, propertyChanged: OnAccentColorChanged);
 
+    /// <summary>
+    /// Bindable property for <see cref="IsPaged"/>.
+    /// </summary>
     public static readonly BindableProperty IsPagedProperty =
-        BindableProperty.Create(nameof(IsPaged), typeof(bool), typeof(StatusGridView), true,
-            propertyChanged: OnPagingChanged);
+        BindableProperty.Create(nameof(IsPaged), typeof(bool), typeof(StatusGridView), true, propertyChanged: OnPagingChanged);
 
+    /// <summary>
+    /// Gets or sets the ordered statuses rendered by the grid.
+    /// </summary>
     public IEnumerable<Status>? Items
     {
         get => (IEnumerable<Status>?)GetValue(ItemsProperty);
         set => SetValue(ItemsProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the message accent used to color status outlines.
+    /// </summary>
     public Color AccentColor
     {
         get => (Color)GetValue(AccentColorProperty);
         set => SetValue(AccentColorProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets whether the grid initially limits itself to two rows.
+    /// </summary>
     public bool IsPaged
     {
         get => (bool)GetValue(IsPagedProperty);
         set => SetValue(IsPagedProperty, value);
     }
 
+    /// <summary>
+    /// Initializes the responsive status grid.
+    /// </summary>
     public StatusGridView()
     {
         InitializeComponent();
@@ -82,48 +98,16 @@ public partial class StatusGridView : ContentView
     {
         if (observedCollection is not null) observedCollection.CollectionChanged -= ItemsOnCollectionChanged;
 
-        foreach (Status status in observedStatuses) status.PropertyChanged -= StatusOnPropertyChanged;
-
-        observedStatuses.Clear();
         observedCollection = items as INotifyCollectionChanged;
 
         if (observedCollection is not null) observedCollection.CollectionChanged += ItemsOnCollectionChanged;
-
-        SynchronizeStatusSubscriptions(items);
     }
 
-    private void SynchronizeStatusSubscriptions(IEnumerable<Status>? items)
-    {
-        HashSet<Status> current = new (items ?? Enumerable.Empty<Status>(), ReferenceEqualityComparer.Instance);
-
-        foreach (Status status in observedStatuses)
-        {
-            if (!current.Contains(status)) status.PropertyChanged -= StatusOnPropertyChanged;
-        }
-
-        foreach (Status status in current)
-        {
-            if (!observedStatuses.Contains(status)) status.PropertyChanged += StatusOnPropertyChanged;
-        }
-
-        observedStatuses.Clear();
-        observedStatuses.UnionWith(current);
-    }
-
-    private void ItemsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        SynchronizeStatusSubscriptions(Items);
-        RebuildRows();
-    }
-
-    private void StatusOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(Status.SortOrder)) Dispatcher.Dispatch(RebuildRows);
-    }
+    private void ItemsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => RebuildRows();
 
     private void OnGridSizeChanged(object? sender, EventArgs e) => RebuildRows();
 
-    private List<Status> GetSortedItems() => Items.Sort();
+    private List<Status> GetSortedItems() => Items?.ToList() ?? [];
 
     private void RebuildRows()
     {
@@ -321,6 +305,7 @@ public partial class StatusGridView : ContentView
         }
     }
 
+    /// <inheritdoc />
     protected override void OnParentSet()
     {
         base.OnParentSet();

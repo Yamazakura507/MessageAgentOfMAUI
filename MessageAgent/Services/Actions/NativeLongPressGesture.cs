@@ -35,6 +35,16 @@ internal sealed class NativeLongPressGesture : IDisposable
     private UILongPressGestureRecognizer? recognizer;
     #endif
 
+    /// <summary>
+    /// Initializes a native long-press recognizer and attaches it to the platform view
+    /// associated with the specified MAUI element.
+    /// </summary>
+    /// <param name="target">The MAUI element whose native view receives the long-press input.</param>
+    /// <param name="callback">The action invoked when the configured long-press duration is reached.</param>
+    /// <param name="duration">The minimum hold duration required to invoke the callback. Must be greater than zero.</param>
+    /// <param name="cancelsTouchesInView">On iOS and Mac Catalyst, specifies whether recognizing the long press cancels touch events delivered to the underlying view.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> or <paramref name="callback"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="duration"/> is zero or negative.</exception>
     public NativeLongPressGesture(VisualElement target, Action callback, TimeSpan duration, bool cancelsTouchesInView = true)
     {
         this.target = target ?? throw new ArgumentNullException(nameof(target));
@@ -155,6 +165,13 @@ internal sealed class NativeLongPressGesture : IDisposable
         #endif
     }
 
+    /// <summary>
+    /// Releases the native gesture recognizer, detaches platform event handlers,
+    /// and unsubscribes from the target element's handler-change event.
+    /// </summary>
+    /// <remarks>
+    /// This method is idempotent. Calling it more than once has no additional effect.
+    /// </remarks>
     public void Dispose()
     {
         if (isDisposed) return;
