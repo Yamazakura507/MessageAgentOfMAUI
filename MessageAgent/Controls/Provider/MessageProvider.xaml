@@ -103,7 +103,7 @@
                 <HorizontalStackLayout
                     x:Name="StatusIconsPanel"
                     Grid.Column="2"
-                    Spacing="3"
+                    Spacing="3" Margin="0,2.5,0,2.5"
                     VerticalOptions="Center">
                     <HorizontalStackLayout
                         Spacing="3"
