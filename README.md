@@ -376,3 +376,34 @@ Example status sorting:
 ## Image carousel navigation
 
 The details dialog uses the library asset `Lotties/arrow.json` for both side arrows. The left arrow uses the source animation; the right arrow uses the same animation with a horizontal mirror applied by a negative X scale modifier. Both are colored from the message's contrast-adjusted dialog accent (`MessageType.GetDialogAccent()`). Arrow controls are disabled visually at the first and last image.
+
+
+## Override built-in Lottie animations
+
+The library's own interface animations can be replaced through application resources, using the public keys in `MessageAgentLottieKeys`. Resource values are strings containing the replacement Lottie asset path/source. Resource lookup includes merged application dictionaries; when a key is not defined, the packaged animation is used.
+
+| Key | Default animation |
+|---|---|
+| `MessageAgentLottieKeys.Arrow` (`MessageAgent.Lotties.Arrow`) | `Lotties/arrow.json` |
+| `MessageAgentLottieKeys.Close` (`MessageAgent.Lotties.Close`) | `Lotties/close.json` |
+| `MessageAgentLottieKeys.More` (`MessageAgent.Lotties.More`) | `Lotties/more_point.json` |
+| `MessageAgentLottieKeys.Minimize` (`MessageAgent.Lotties.Minimize`) | `Lotties/minimize.json` |
+
+For example, add a replacement to the application ResourceDictionary:
+
+~~~xml
+<Application
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <x:String x:Key="MessageAgent.Lotties.Close">Lotties/my_close.json</x:String>
+            <x:String x:Key="MessageAgent.Lotties.Arrow">Lotties/my_arrow.json</x:String>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
+~~~
+
+Include replacement JSON files in the application package as MAUI assets, preserving the logical asset names used in the resource values (for example, `Lotties/my_close.json`). These keys affect the library's built-in controls (the details-dialog carousel arrows, close buttons, status overflow and collapse actions). They do not rewrite sources supplied by application-defined `LottieVisualValue` instances.
+
+The notification animation `Lotties/circleLable.json` is intentionally not part of this global override table. It is selected per message type through `MessageType.NotificationAnimationSource`, and that exact source is used both by the compact `MessageProvider` icon and the details-dialog header. This lets different message types use different notification animations while keeping their modifiers type-specific.

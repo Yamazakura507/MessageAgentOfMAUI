@@ -3,6 +3,7 @@ using LottieAgent.Models;
 using MessageAgent.Services;
 using MessageAgent.Services.Actions;
 using MessageAgent.Services.Extensions;
+using MessageAgent.Resources.ExtensionResources;
 using MessageAgent.Services.Interactions;
 using MessageAgent.Services.Models;
 using System.Diagnostics;
@@ -92,7 +93,22 @@ public partial class StatusActionButton : ContentView
     /// <summary>
     /// Gets the effective Lottie source used when the action is animated.
     /// </summary>
-    public string EffectiveAnimationSource => AnimationSource ?? "Lotties/more_point.json";
+    public string EffectiveAnimationSource
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(AnimationSource))
+                return MessageAgentLotties.Get(MessageAgentLottieKeys.More, "Lotties/more_point.json");
+
+            if (AnimationSource.EndsWith("more_point.json", StringComparison.OrdinalIgnoreCase))
+                return MessageAgentLotties.Get(MessageAgentLottieKeys.More, AnimationSource);
+
+            if (AnimationSource.EndsWith("minimize.json", StringComparison.OrdinalIgnoreCase))
+                return MessageAgentLotties.Get(MessageAgentLottieKeys.Minimize, AnimationSource);
+
+            return AnimationSource;
+        }
+    }
 
     /// <summary>
     /// Gets the modifiers associated with the current action animation.

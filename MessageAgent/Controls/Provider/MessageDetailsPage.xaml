@@ -23,6 +23,7 @@
             <converters:MessageTypeToLottieModifiersConverter x:Key="LottieModifiersConverter" />
             <converters:ReadStateConverter x:Key="ReadStateConverter" />
             <converters:MessageAgentImageSourceConverter x:Key="MessageAgentImageSourceConverter" />
+            <converters:MessageAgentLottieSourceConverter x:Key="MessageAgentLottieSourceConverter" />
             <converters:HasTextConverter x:Key="HasTextConverter" />
             <converters:CollectionCountConverter x:Key="HasItemsConverter" MinimumCount="1" />
             <converters:CollectionCountConverter x:Key="HasMultipleItemsConverter" MinimumCount="2" />
@@ -161,10 +162,10 @@
                         <lottie:LottieView
                             x:Name="PreviousImageArrow"
                             Grid.Column="0"
-                            Source="Lotties/arrow.json"
-                            WidthRequest="32" HeightRequest="32"
+                            Source="{Binding ., Converter={StaticResource MessageAgentLottieSourceConverter}, ConverterParameter=MessageAgent.Lotties.Arrow}"
+                            WidthRequest="64" HeightRequest="64"
                             HorizontalOptions="Center" VerticalOptions="Center"
-                            Progress="1" IsPlaying="False" IsLooping="False"
+                            Progress="0.6622" IsPlaying="False" IsLooping="False"
                             JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
                             ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
                             Modifiers="{StaticResource LeftArrowModifiers}">
@@ -193,10 +194,10 @@
                         <lottie:LottieView
                             x:Name="NextImageArrow"
                             Grid.Column="2"
-                            Source="Lotties/arrow.json"
-                            WidthRequest="32" HeightRequest="32"
+                            Source="{Binding ., Converter={StaticResource MessageAgentLottieSourceConverter}, ConverterParameter=MessageAgent.Lotties.Arrow}"
+                            WidthRequest="64" HeightRequest="64"
                             HorizontalOptions="Center" VerticalOptions="Center"
-                            Progress="1" IsPlaying="False" IsLooping="False"
+                            Progress="0.6622" IsPlaying="False" IsLooping="False"
                             JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
                             ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
                             Modifiers="{StaticResource RightArrowModifiers}">
@@ -229,7 +230,7 @@
                             <lottie:LottieView
                                 x:Name="CloseAnimation"
                                 Grid.Column="0"
-                                Source="Lotties/close.json"
+                                Source="{Binding ., Converter={StaticResource MessageAgentLottieSourceConverter}, ConverterParameter=MessageAgent.Lotties.Close}"
                                 Progress="1"
                                 JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
                                 ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"

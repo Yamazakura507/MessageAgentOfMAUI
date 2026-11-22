@@ -20,7 +20,7 @@ public static class MessageAgentImages
 
         ResourceDictionary? resources = Application.Current?.Resources;
 
-        if (resources is not null && TryFindResource(resources, resourceKey, out object? value))
+        if (resources is not null && resources.TryFindResource(resourceKey, out object? value))
         {
             if (value is FileImageSource fileImageSource && !string.IsNullOrWhiteSpace(fileImageSource.File))
                 return ImageSource.FromFile(NormalizeImageFileName(fileImageSource.File));
@@ -35,7 +35,7 @@ public static class MessageAgentImages
     private static string NormalizeImageFileName(string fileName)
         => Path.GetExtension(fileName).Equals(".svg", StringComparison.OrdinalIgnoreCase) ? Path.ChangeExtension(fileName, ".png") : fileName;
 
-    private static bool TryFindResource(ResourceDictionary dictionary, string key, out object? value)
+    internal static bool TryFindResource(this ResourceDictionary dictionary, string key, out object? value)
     {
         if (dictionary.TryGetValue(key, out value)) return true;
 

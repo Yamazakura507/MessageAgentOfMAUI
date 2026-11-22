@@ -4,6 +4,7 @@
     xmlns:modal="clr-namespace:MessageAgent.Controls.Provider.Abstract"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
+    xmlns:converters="clr-namespace:MessageAgent.Converters"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
     xmlns:lottieModels="clr-namespace:LottieAgent.Models;assembly=LottieAgent"
     x:Class="MessageAgent.Controls.Provider.StatusOverflowPage"
@@ -13,6 +14,7 @@
 
     <ContentPage.Resources>
         <ResourceDictionary>
+            <converters:MessageAgentLottieSourceConverter x:Key="MessageAgentLottieSourceConverter" />
             <lottieModels:LottieModifierCollection x:Key="CloseAnimationModifiers" />
         </ResourceDictionary>
     </ContentPage.Resources>
@@ -71,7 +73,7 @@
                         </Border.GestureRecognizers>
                         <lottie:LottieView
                             x:Name="CloseAnimation"
-                            Source="Lotties/close.json"
+                            Source="{Binding ., Converter={StaticResource MessageAgentLottieSourceConverter}, ConverterParameter=MessageAgent.Lotties.Close}"
                             WidthRequest="16"
                             HeightRequest="16"
                             HorizontalOptions="Center"
