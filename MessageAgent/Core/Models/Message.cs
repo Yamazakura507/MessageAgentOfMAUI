@@ -24,6 +24,7 @@ public class Message : IMessage, INotifyPropertyChanged
     private INotifyCollectionChanged? imagesCollection;
     private INotifyCollectionChanged? linksCollection;
     private bool isRead;
+    private int sortOrder;
 
     /// <summary>
     /// Initializes a message and observes its default collections.
@@ -39,6 +40,16 @@ public class Message : IMessage, INotifyPropertyChanged
     /// Gets the immutable unique identifier of this message.
     /// </summary>
     public Guid Id { get; } = Guid.NewGuid();
+
+    /// <summary>
+    /// Gets or sets the explicit display order. Lower values appear first when no explicit
+    /// sorting rules are configured. Equal values preserve their current order.
+    /// </summary>
+    public int SortOrder
+    {
+        get => sortOrder;
+        set => SetField(ref sortOrder, value);
+    }
 
     /// <summary>
     /// Gets or sets the message title.

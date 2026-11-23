@@ -13,6 +13,10 @@ namespace MessageAgent.Core.Interfaces
         /// </summary>
         Guid Id { get; }
         /// <summary>
+        /// Gets or sets the explicit display order used by a MessageCollection.
+        /// </summary>
+        int SortOrder { get; set; }
+        /// <summary>
         /// Gets or sets the message title.
         /// </summary>
         string Title { get; set; }

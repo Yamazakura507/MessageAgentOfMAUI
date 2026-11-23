@@ -347,9 +347,162 @@ Relative local paths are resolved against `FileSystem.AppDataDirectory`. Absolut
 
 ## Collection sorting
 
-Both `StatusCollection` and `MessageLinksCollection` sort their contents automatically. With no explicit rules, each collection sorts ascending by `SortOrder`. Updating a sortable property or a rule reapplies the collection order and raises the normal observable-collection notifications.
+`MessageCollection`, `StatusCollection` and `MessageLinksCollection` sort their contents automatically. With no explicit rules, each collection sorts ascending by `SortOrder`. Updating a sortable property or a rule reapplies the collection order and raises the normal observable-collection notifications.
 
-Each collection has its own enum for `SortParametr`: `StatusSortParametr` and `MessageLinkSortParametr`. A rule also specifies `SortType` (`Ascending` or `Descending`) and `SortKind` (`Bubble`, `Selection`, `Insertion`, `Quick`, `Merge` or `Heap`). When multiple rules are present, the first rule is the primary key and subsequent rules break ties. Sort algorithms live in the independent `SortLib` project.
+Each collection has its own enum for `SortParametr`: `MessageSortParametr`, `StatusSortParametr` and `MessageLinkSortParametr`. A rule also specifies `SortType` (`Ascending` or `Descending`) and `SortKind` (`Bubble`, `Selection`, `Insertion`, `Quick`, `Merge` or `Heap`). When multiple rules are present, the first rule is the primary key and subsequent rules break ties. Sort algorithms live in the independent `SortLib` project.
+
+`MessageCollection` contains `Message` instances and keeps them sorted by `Message.SortOrder` by default. Its `MessageSortParametr` enum also supports sorting by `Id`, `Title`, `Type` (the stable type name), `Description`, `IsImportant`, `IsRead`, `StatusCount`, `ImageCount` and `LinkCount`. Changes to a message or to one of its observable child collections automatically trigger sorting again.
+
+`MessageCollection` exposes `GroupRules`, an ordered collection of `MessageGroupRule` objects, and the resulting `Groups` tree. `GroupMessageParametrs` supports `Type`, `IsRead` and `IsImportant`. Each rule may specify `LevelIndex`: lower numeric values have higher priority and form outer levels first. Rules without an index are placed after all explicitly indexed rules, retaining their declaration order. If no rule specifies an index, the original XAML declaration order is used. When explicit indices are equal, declaration order breaks the tie. In the example below, the resolved nesting order is `IsRead (0)`, `Type (2)`, then `IsImportant` (automatic lower priority). `Groups` is rebuilt automatically when messages are added, removed or changed, when sorting changes their order, and when grouping rules are added, removed or edited. The group tree follows the collection's current sort order: group keys retain their first-occurrence order, and messages in leaf groups retain their sorted order.
+
+`GroupLib` is a separate, UI-independent project. It contains the generic `GroupRule<TParameter>`, `GroupNode<TItem, TParameter>` and `GroupEngine` types. MessageAgent provides `MessageGroupRule` and `MessageGroup` as strongly typed adapters for its message model. `GroupBy(...)` remains available for one-off grouping without changing the configured XAML rules.
+
+Configure sorting and multi-level grouping together in XAML:
+
+~~~xml
+<collections:MessageCollection x:Key="Messages">
+    <collections:MessageCollection.SortRules>
+        <sortRules:MessageSortRule SortParametr="SortOrder" SortType="Ascending" SortKind="Merge" />
+        <sortRules:MessageSortRule SortParametr="Title" SortType="Ascending" SortKind="Quick" />
+    </collections:MessageCollection.SortRules>
+
+    <collections:MessageCollection.GroupRules>
+        <grouping:MessageGroupRule GroupParametr="IsImportant" />
+        <grouping:MessageGroupRule GroupParametr="Type" LevelIndex="2" />
+        <grouping:MessageGroupRule GroupParametr="IsRead" LevelIndex="0" />
+    </collections:MessageCollection.GroupRules>
+</collections:MessageCollection>
+~~~
+
+Declare the corresponding namespaces on the containing ResourceDictionary or page:
+
+~~~xml
+xmlns:collections="clr-namespace:MessageAgent.Core.Models.Collections;assembly=MessageAgent"
+xmlns:sortRules="clr-namespace:MessageAgent.Core.Models.SortRule;assembly=MessageAgent"
+xmlns:grouping="clr-namespace:MessageAgent.Core.Models.Grouping;assembly=MessageAgent"
+~~~
+
+The computed grouping tree is available through `Messages.Groups` (or the collection's `Groups` property). Every `MessageGroup` exposes `Parameter`, `Value`, child `Groups` and leaf `Messages`. Since the result is hierarchical, a UI can render each level recursively or bind a view to the relevant child `Groups` collection. Use `RefreshGroups()` if a custom grouping key depends on state outside the observable message properties.
+
+## Message filtering and search
+
+Filtering and search are implemented by the independent, UI-agnostic `WhereLib` project. `MessageCollection` exposes three configuration properties:
+
+- `FilterRules` — multiple conditions combined with `And` by default.
+- `SearchRules` — multiple text fields combined with `Or` by default.
+- `SearchOptions` — shared search mode, case handling, strictness and Levenshtein threshold.
+
+Each rule's `Operator` joins that rule to the **next** rule in the same list. The final rule's operator is ignored. If an operator is omitted, the relevant default (`And` for filters, `Or` for search) is used. Rules are evaluated from left to right. Filtering and searching are then combined with `And`: an item must pass both stages.
+
+### Filter parameters
+
+`MessageFilterParametr` supports:
+
+| Parameter | Meaning | `Value` |
+|---|---|---|
+| `Type` | Match the message type name | Type name, e.g. `Error` |
+| `IsImportant` | Match importance flag | `True` / `False` |
+| `IsRead` | Match read flag | `True` / `False` |
+| `IsStatus` | Whether the message has statuses | `True` / `False` |
+| `ContainStatus` | A status name contains this text | Text to find; only messages with statuses can match |
+| `IsImage` | Whether the message has image attachments | `True` / `False` |
+| `IsLink` | Whether the message has links | `True` / `False` |
+
+For boolean parameters, an omitted `Value` means `True`. `ContainStatus` requires at least one status and searches status names case-insensitively.
+
+### Search parameters and modes
+
+`MessageSearchParametr` supports `Title` and `Description`. Each `MessageSearchRule` carries its own `SearchText`. Both fields may be active at the same time.
+
+`SearchOptions.Mode` accepts:
+
+- `Contains` — classic text matching. With `IsStrict="False"`, the query may occur anywhere in the candidate; with `IsStrict="True"`, the whole candidate must equal the query.
+- `Levenshtein` — fuzzy edit-distance search. With `IsStrict="False"`, the query can match a substring with the configured edit distance; with `IsStrict="True"`, the whole candidate is compared.
+
+`IsCaseSensitive` selects case-sensitive matching. `MaxLevenshteinDistance` sets the accepted edit distance (default `2`). `Mode`, case handling, strictness and the threshold can be changed at runtime; the result is recalculated immediately.
+
+### XAML configuration
+
+~~~xml
+<collections:MessageCollection x:Key="Messages">
+    <collections:MessageCollection.SortRules>
+        <sortRules:MessageSortRule SortParametr="SortOrder" SortType="Ascending" SortKind="Merge" />
+        <sortRules:MessageSortRule SortParametr="Title" SortType="Ascending" SortKind="Quick" />
+    </collections:MessageCollection.SortRules>
+
+    <collections:MessageCollection.FilterRules>
+        <filtering:MessageFilterRule WhereParametr="Type" Value="Error" Operator="Or" />
+        <filtering:MessageFilterRule WhereParametr="IsImportant" Value="True" Operator="And" />
+        <filtering:MessageFilterRule WhereParametr="IsStatus" Value="True" />
+        <filtering:MessageFilterRule WhereParametr="ContainStatus" Value="network" />
+        <filtering:MessageFilterRule WhereParametr="IsImage" Value="True" />
+        <filtering:MessageFilterRule WhereParametr="IsLink" Value="True" />
+    </collections:MessageCollection.FilterRules>
+
+    <collections:MessageCollection.SearchRules>
+        <filtering:MessageSearchRule WhereParametr="Title" SearchText="connection" />
+        <filtering:MessageSearchRule WhereParametr="Description" SearchText="timeout" />
+    </collections:MessageCollection.SearchRules>
+
+    <collections:MessageCollection.SearchOptions>
+        <whereModels:SearchOptions
+            Mode="Levenshtein"
+            IsCaseSensitive="False"
+            IsStrict="False"
+            MaxLevenshteinDistance="2" />
+    </collections:MessageCollection.SearchOptions>
+
+    <collections:MessageCollection.GroupRules>
+        <grouping:MessageGroupRule GroupParametr="Type" />
+        <grouping:MessageGroupRule GroupParametr="IsImportant" />
+    </collections:MessageCollection.GroupRules>
+</collections:MessageCollection>
+~~~
+
+Add these namespaces to the containing page or ResourceDictionary:
+
+~~~xml
+xmlns:filtering="clr-namespace:MessageAgent.Core.Models.Filtering;assembly=MessageAgent"
+xmlns:whereModels="clr-namespace:WhereLib.Models;assembly=WhereLib"
+~~~
+
+The source collection remains complete and sorted. Bind the filtered result to `Messages.FilteredMessages`; the property is a read-only observable collection kept in the same order as the source. `Messages.Groups` is built from this filtered result, so grouping automatically reflects both the active filters and search. Changing a message, its status/image/link collections, a rule, or a search option refreshes the filtered result and dependent groups.
+
+For one-off grouping in C#:
+
+~~~csharp
+IReadOnlyList<MessageGroup> groups = messages.GroupBy(
+    GroupMessageParametrs.Type,
+    GroupMessageParametrs.IsImportant,
+    GroupMessageParametrs.IsRead);
+~~~
+
+Example in C#:
+
+~~~csharp
+using MessageAgent.Core.Enums.Message;
+using MessageAgent.Core.Models;
+using MessageAgent.Core.Models.Collections;
+using MessageAgent.Core.Models.SortRule;
+using SortLib.Enums;
+
+MessageCollection messages =
+[
+    new Message { SortOrder = 20, Title = "Second", IsImportant = true },
+    new Message { SortOrder = 10, Title = "First" },
+    new Message { SortOrder = 30, Title = "Third" }
+];
+
+// The default SortOrder rule is already active.
+messages.SortRules.Add(
+    new MessageSortRule(MessageSortParametr.IsImportant, SortType.Descending));
+
+messages.SortRules.Add(
+    new MessageSortRule(MessageSortParametr.Title, SortType.Ascending, SortKind.Quick));
+
+// Updating a message property automatically reapplies the configured rules.
+messages[0].IsImportant = false;
+~~~
 
 Example status sorting:
 
