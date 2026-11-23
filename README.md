@@ -412,7 +412,7 @@ For boolean parameters, an omitted `Value` means `True`. `ContainStatus` require
 
 ### Search parameters and modes
 
-`MessageSearchParametr` supports `Title` and `Description`. Each `MessageSearchRule` carries its own `SearchText`. Both fields may be active at the same time.
+`MessageSearchParametr` supports `Title`, `Description` and `TextStatuses`. Each `MessageSearchRule` carries its own `SearchText`. All three parameters may be active at the same time. `TextStatuses` checks every status name attached to a message and matches the message when at least one status name matches the query. It uses the active `SearchOptions`, including case sensitivity, strictness and the selected `Contains` or `Levenshtein` mode.
 
 `SearchOptions.Mode` accepts:
 
@@ -442,6 +442,7 @@ For boolean parameters, an omitted `Value` means `True`. `ContainStatus` require
     <collections:MessageCollection.SearchRules>
         <filtering:MessageSearchRule WhereParametr="Title" SearchText="connection" />
         <filtering:MessageSearchRule WhereParametr="Description" SearchText="timeout" />
+        <filtering:MessageSearchRule WhereParametr="TextStatuses" SearchText="network" />
     </collections:MessageCollection.SearchRules>
 
     <collections:MessageCollection.SearchOptions>

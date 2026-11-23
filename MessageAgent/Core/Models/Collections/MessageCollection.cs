@@ -255,8 +255,8 @@ public sealed class MessageCollection : SortableObservableCollection<Message, Me
     private void UpdateFilteredMessages()
     {
         IReadOnlyList<Message> result =
-            this.Apply<Message, MessageFilterParametr, MessageSearchParametr, MessageFilterRule, MessageSearchRule>
-                (FilterRules, MatchesFilter, SearchRules, GetSearchValue, SearchOptions);
+            this.ApplyMany<Message, MessageFilterParametr, MessageSearchParametr, MessageFilterRule, MessageSearchRule>
+                (FilterRules, MatchesFilter, SearchRules, GetSearchValues, SearchOptions);
 
         SyncMessages(result);
     }
@@ -341,10 +341,11 @@ public sealed class MessageCollection : SortableObservableCollection<Message, Me
         return Convert.ToBoolean(value, System.Globalization.CultureInfo.InvariantCulture);
     }
 
-    private static string? GetSearchValue(Message message, MessageSearchRule rule) => rule.WhereParametr switch
+    private static IEnumerable<string?> GetSearchValues(Message message, MessageSearchRule rule) => rule.WhereParametr switch
     {
-        MessageSearchParametr.Title => message.Title,
-        MessageSearchParametr.Description => message.Description,
+        MessageSearchParametr.Title => new string?[] { message.Title },
+        MessageSearchParametr.Description => new string?[] { message.Description },
+        MessageSearchParametr.TextStatuses => message.Status.Select(status => (string?)status.Name),
         _ => throw new ArgumentOutOfRangeException(nameof(rule.WhereParametr), rule.WhereParametr, "Unsupported message search parameter.")
     };
 

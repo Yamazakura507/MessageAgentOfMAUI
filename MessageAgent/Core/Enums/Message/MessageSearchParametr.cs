@@ -12,5 +12,10 @@ public enum MessageSearchParametr
     /// <summary>
     /// Message description.
     /// </summary>
-    Description
+    Description,
+    /// <summary>
+    /// Searches the names of all statuses attached to the message.
+    /// A message matches when at least one status name matches the search text.
+    /// </summary>
+    TextStatuses
 }
