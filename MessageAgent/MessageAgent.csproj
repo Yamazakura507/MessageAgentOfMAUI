@@ -24,9 +24,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\LottieAgentOfMAUI_NET10\LottieAgent\LottieAgent.csproj" />
-    <ProjectReference Include="..\..\SortingLib\SortLib.csproj" />
-    <ProjectReference Include="..\..\GroupLib\GroupLib.csproj" />
-    <ProjectReference Include="..\..\WhereLib\WhereLib.csproj" />
+    <ProjectReference Include="..\..\CollectionLib\CollectionLib.csproj" />
+    <ProjectReference Include="..\..\ResourcesLib\ResourcesLib.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -12,7 +12,8 @@ public static class MessageAgentLottieKeys
     public const string Arrow = "MessageAgent.Lotties.Arrow";
 
     /// <summary>
-    /// Resource key for the close action animation.
+    /// Legacy key for the shared close animation. MessageListView checks this key
+    /// after the current CollectionLib key for existing application resource overrides.
     /// </summary>
     public const string Close = "MessageAgent.Lotties.Close";
 

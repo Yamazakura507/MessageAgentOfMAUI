@@ -355,7 +355,11 @@ Each collection has its own enum for `SortParametr`: `MessageSortParametr`, `Sta
 
 `MessageCollection` exposes `GroupRules`, an ordered collection of `MessageGroupRule` objects, and the resulting `Groups` tree. `GroupMessageParametrs` supports `Type`, `IsRead` and `IsImportant`. Each rule may specify `LevelIndex`: lower numeric values have higher priority and form outer levels first. Rules without an index are placed after all explicitly indexed rules, retaining their declaration order. If no rule specifies an index, the original XAML declaration order is used. When explicit indices are equal, declaration order breaks the tie. In the example below, the resolved nesting order is `IsRead (0)`, `Type (2)`, then `IsImportant` (automatic lower priority). `Groups` is rebuilt automatically when messages are added, removed or changed, when sorting changes their order, and when grouping rules are added, removed or edited. The group tree follows the collection's current sort order: group keys retain their first-occurrence order, and messages in leaf groups retain their sorted order.
 
-`GroupLib` is a separate, UI-independent project. It contains the generic `GroupRule<TParameter>`, `GroupNode<TItem, TParameter>` and `GroupEngine` types. MessageAgent provides `MessageGroupRule` and `MessageGroup` as strongly typed adapters for its message model. `GroupBy(...)` remains available for one-off grouping without changing the configured XAML rules.
+`GroupLib` is a separate, UI-independent project. It contains the generic `GroupRule<TParameter>`, `GroupNode<TItem, TParameter>` and `GroupEngine` types. MessageAgent provides `MessageGroupRule` as the message-specific rule type; the resulting tree uses the shared `GroupNode<Message, GroupMessageParametrs>` model. `GroupBy(...)` remains available for one-off grouping without changing the configured XAML rules.
+
+## Message list control
+
+`MessageListViewBase` is the typed MessageAgent adapter over `CollectionListView<T...>`. It binds `MessageCollection` to the message filter/search/group/sort enums and rule types, and provides the message-specific parameter names and value formatters. `MessageListView` contains only the message-specific type strip, type/status filter extensions, the `MessageProvider` item factory and message delete/swipe actions. The shared toolbar, search, sort, filter, group rendering, popup lifecycle, collection subscriptions, item-view cache and background handling live in CollectionLib.
 
 Configure sorting and multi-level grouping together in XAML:
 
@@ -382,7 +386,7 @@ xmlns:sortRules="clr-namespace:MessageAgent.Core.Models.SortRule;assembly=Messag
 xmlns:grouping="clr-namespace:MessageAgent.Core.Models.Grouping;assembly=MessageAgent"
 ~~~
 
-The computed grouping tree is available through `Messages.Groups` (or the collection's `Groups` property). Every `MessageGroup` exposes `Parameter`, `Value`, child `Groups` and leaf `Messages`. Since the result is hierarchical, a UI can render each level recursively or bind a view to the relevant child `Groups` collection. Use `RefreshGroups()` if a custom grouping key depends on state outside the observable message properties.
+The computed grouping tree is available through `Messages.Groups` (or the collection's `Groups` property) as `GroupNode<Message, GroupMessageParametrs>`. Each node exposes `Parameter`, `Value`, child `Children` and leaf `Items`. Since the result is hierarchical, a UI can render each level recursively or bind a view to the relevant child `Children` collection. Use `RefreshGroups()` if a custom grouping key depends on state outside the observable message properties.
 
 ## Message filtering and search
 
@@ -472,7 +476,7 @@ The source collection remains complete and sorted. Bind the filtered result to `
 For one-off grouping in C#:
 
 ~~~csharp
-IReadOnlyList<MessageGroup> groups = messages.GroupBy(
+IReadOnlyList<GroupNode<Message, GroupMessageParametrs>> groups = messages.GroupBy(
     GroupMessageParametrs.Type,
     GroupMessageParametrs.IsImportant,
     GroupMessageParametrs.IsRead);
@@ -533,7 +537,7 @@ The details dialog uses the library asset `Lotties/arrow.json` for both side arr
 
 ## Override built-in Lottie animations
 
-The library's interface animations can be replaced through application resources, using the public keys in `MessageAgentLottieKeys`. The built-in sources and their default settings are centralized in `MessageAgent/Resources/DefaultResourceDictionary.xaml`; it is loaded internally and does not need to be merged into application resources. Application resources take precedence, including merged dictionaries. Each key accepts either a source string (the original source-only override format) or a `MessageAgentLottieSettings` object. Omitted settings inherit the values from `DefaultResourceDictionary.xaml`.
+The library's interface animations can be replaced through application resources, using the public keys in `MessageAgentLottieKeys`. The built-in sources and their default settings are centralized in `MessageAgent/Resources/DefaultResourceDictionary.xaml`; it is loaded internally and does not need to be merged into application resources. Resolution is performed directly by `ResourcesLib.Resolvers.LottieResourceResolver`. Application resources take precedence, including merged dictionaries. Each key accepts either a source string or the renderer-neutral `ResourcesLib.Models.LottieResourceSettings` object. Omitted settings inherit the values from `DefaultResourceDictionary.xaml`.
 
 | Key | Default animation | Resting Progress | Speed |
 |---|---|---:|---:|
@@ -542,33 +546,33 @@ The library's interface animations can be replaced through application resources
 | `MessageAgentLottieKeys.More` (`MessageAgent.Lotties.More`) | `Lotties/more_point.json` | `0` | `1` |
 | `MessageAgentLottieKeys.Minimize` (`MessageAgent.Lotties.Minimize`) | `Lotties/minimize.json` | `0` | `1` |
 
-A settings object can override the source, modifier collection, resting position, playback speed and playback direction. For example:
+A settings object can override the source, renderer-specific modifier collection, resting position, playback speed and playback direction. For example:
 
 ~~~xml
 <Application
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:messageLotties="clr-namespace:MessageAgent.Resources.ExtensionResources;assembly=MessageAgent"
+    xmlns:resourceSettings="clr-namespace:ResourcesLib.Models;assembly=ResourcesLib"
     xmlns:lottieModels="clr-namespace:LottieAgent.Models;assembly=LottieAgent"
     xmlns:lottieModifiers="clr-namespace:LottieAgent.Models.Modifier;assembly=LottieAgent">
     <Application.Resources>
         <ResourceDictionary>
-            <messageLotties:MessageAgentLottieSettings
+            <resourceSettings:LottieResourceSettings
                 x:Key="MessageAgent.Lotties.Arrow"
                 Source="Lotties/my_arrow.json"
                 RestingProgress="0.55"
                 Speed="1.2"
                 IsReversed="False">
-                <messageLotties:MessageAgentLottieSettings.Modifiers>
+                <resourceSettings:LottieResourceSettings.Modifiers>
                     <lottieModels:LottieModifierCollection>
                         <lottieModifiers:LottieColorModifier
                             TargetName="Stroke 1"
                             Color="#42B883" />
                     </lottieModels:LottieModifierCollection>
-                </messageLotties:MessageAgentLottieSettings.Modifiers>
-            </messageLotties:MessageAgentLottieSettings>
+                </resourceSettings:LottieResourceSettings.Modifiers>
+            </resourceSettings:LottieResourceSettings>
 
-            <messageLotties:MessageAgentLottieSettings
+            <resourceSettings:LottieResourceSettings
                 x:Key="MessageAgent.Lotties.Close"
                 RestingProgress="0.8" />
         </ResourceDictionary>
@@ -576,7 +580,7 @@ A settings object can override the source, modifier collection, resting position
 </Application>
 ~~~
 
-The modifier collection supplied by the application is appended after the library's default modifiers. This lets an application change a default accent or palette color by targeting the same JSON element later in the collection. `RestingProgress` is a normalized position in the range `0–1`; it is restored whenever an interactive animation becomes idle. `Speed` must be greater than zero. `IsReversed` changes the playback direction. A source-only string resource remains supported:
+The modifier collection supplied by the application is appended after the library's default modifiers. This lets an application change a default accent or palette color by targeting the same JSON element later in the collection. `RestingProgress` is a normalized position in the range `0–1`; it is restored whenever an interactive animation becomes idle. `Speed` must be greater than zero. `IsReversed` changes the playback direction. The source-only string resource remains supported:
 
 ~~~xml
 <x:String x:Key="MessageAgent.Lotties.Arrow">Lotties/my_arrow.json</x:String>

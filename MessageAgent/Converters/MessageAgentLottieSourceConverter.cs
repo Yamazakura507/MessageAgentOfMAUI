@@ -1,6 +1,9 @@
 using System.Globalization;
+using CollectionLib.Resources;
+using CollectionLib.Resources.ExtensionResources;
+using MessageAgent.Resources;
 using MessageAgent.Resources.ExtensionResources;
-using MessageAgent.Services.Extensions;
+using ResourcesLib.Resolvers;
 
 namespace MessageAgent.Converters;
 
@@ -16,12 +19,30 @@ public sealed class MessageAgentLottieSourceConverter : IValueConverter
 
         return key switch
         {
-            MessageAgentLottieKeys.Arrow => MessageAgentLotties.Get(key, "Lotties/arrow.json"),
-            MessageAgentLottieKeys.Close => MessageAgentLotties.Get(key, "Lotties/close.json"),
-            MessageAgentLottieKeys.More => MessageAgentLotties.Get(key, "Lotties/more_point.json"),
-            MessageAgentLottieKeys.Minimize => MessageAgentLotties.Get(key, "Lotties/minimize.json"),
+            MessageAgentLottieKeys.Arrow => ResolveSource(key, "Lotties/arrow.json"),
+            MessageAgentLottieKeys.Close => ResolveSource(key, "Lotties/close.json"),
+            MessageAgentLottieKeys.More => ResolveSource(key, "Lotties/more_point.json"),
+            MessageAgentLottieKeys.Minimize => ResolveSource(key, "Lotties/minimize.json"),
             _ => null
         };
+    }
+
+    private static string ResolveSource(string key, string fallbackSource)
+    {
+        bool isSharedClose = key == MessageAgentLottieKeys.Close;
+
+        return LottieResourceResolver.GetSource(
+            key,
+            defaultResources: isSharedClose
+                ? CollectionListDefaultResourceDictionary.Instance
+                : DefaultResourceDictionary.Instance,
+            defaultSource: fallbackSource,
+            applicationResourceKeys: isSharedClose
+                ? new[] { CollectionListLottieKeys.Close, key }
+                : new[] { key },
+            defaultResourceKeys: isSharedClose
+                ? new[] { CollectionListLottieKeys.Close }
+                : new[] { key });
     }
 
     /// <inheritdoc />

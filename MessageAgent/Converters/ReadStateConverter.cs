@@ -1,6 +1,7 @@
 using System.Globalization;
+using MessageAgent.Resources;
 using MessageAgent.Resources.ExtensionResources;
-using MessageAgent.Services.Extensions;
+using ResourcesLib.Resolvers;
 
 namespace MessageAgent.Converters;
 
@@ -16,9 +17,9 @@ public sealed class ReadStateConverter : IValueConverter
 
         return parameter?.ToString() switch
         {
-            "Image" => isRead 
-                        ? MessageAgentImages.Get(MessageAgentImageKeys.Read, "message_read.png") 
-                        : MessageAgentImages.Get(MessageAgentImageKeys.Unread, "message_unread.png"),
+            "Image" => isRead
+                ? ImageResourceResolver.Get(MessageAgentImageKeys.Read, "message_read.png", DefaultResourceDictionary.Instance)
+                : ImageResourceResolver.Get(MessageAgentImageKeys.Unread, "message_unread.png", DefaultResourceDictionary.Instance),
             _ => isRead ? "Прочитано" : "Не прочитано"
         };
     }

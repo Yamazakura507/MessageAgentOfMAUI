@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<lists:MessageListViewBase
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:lists="clr-namespace:MessageAgent.Controls.Lists"
+    x:Class="MessageAgent.Controls.Lists.MessageListView">
+    <lists:MessageListViewBase.AdditionalHeaderContent>
+<Border x:Name="TypeFiltersBorder" Grid.Row="1" Padding="4" StrokeThickness="0" BackgroundColor="Transparent">
+            <VerticalStackLayout x:Name="TypeRowsHost" Spacing="4">
+                <HorizontalStackLayout x:Name="TypeRowOne" Spacing="5" />
+                <HorizontalStackLayout x:Name="TypeRowTwo" Spacing="5" IsVisible="False" />
+            </VerticalStackLayout>
+        </Border>
+    </lists:MessageListViewBase.AdditionalHeaderContent>
+</lists:MessageListViewBase>

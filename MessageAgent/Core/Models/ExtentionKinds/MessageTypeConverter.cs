@@ -1,11 +1,12 @@
 using System.ComponentModel;
 using System.Globalization;
+using ResourcesLib.Extensions;
 
 namespace MessageAgent.Core.Models.ExtentionKinds;
 
 /// <summary>
 /// Resolves Type="Error" against application resources first, then falls back to
-/// the library defaults. A ResourceDictionary can override or add message types.
+/// the built-in Error, Alert and Info definitions.
 /// </summary>
 public sealed class MessageTypeConverter : TypeConverter
 {
@@ -30,10 +31,7 @@ public sealed class MessageTypeConverter : TypeConverter
 
         name = name.Trim();
 
-        ResourceDictionary? resources = Application.Current?.Resources;
-
-        if (resources is not null 
-            && TryFindResource(resources, $"MessageType.{name}", out object resource) 
+        if (ResourceDictionaryExtensions.TryFindApplicationResource($"MessageType.{name}", out object? resource)
             && resource is MessageType resourceType)
         {
             return resourceType;
@@ -46,24 +44,5 @@ public sealed class MessageTypeConverter : TypeConverter
             "INFO" => MessageType.Info,
             _ => throw new FormatException($"'{name}' is not a built-in message type and no 'MessageType.{name}' resource was found.")
         };
-    }
-
-    private static bool TryFindResource(ResourceDictionary dictionary, string key, out object resource)
-    {
-        if (dictionary.TryGetValue(key, out object directValue))
-        {
-            resource = directValue;
-
-            return true;
-        }
-
-        foreach (ResourceDictionary mergedDictionary in dictionary.MergedDictionaries)
-        {
-            if (TryFindResource(mergedDictionary, key, out resource)) return true;
-        }
-
-        resource = null!;
-
-        return false;
     }
 }

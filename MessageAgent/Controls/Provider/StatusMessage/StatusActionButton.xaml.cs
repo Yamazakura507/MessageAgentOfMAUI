@@ -3,8 +3,11 @@ using LottieAgent.Models;
 using MessageAgent.Services;
 using MessageAgent.Services.Actions;
 using MessageAgent.Services.Extensions;
+using MessageAgent.Resources;
 using MessageAgent.Resources.ExtensionResources;
 using MessageAgent.Services.Interactions;
+using ResourcesLib.Models;
+using ResourcesLib.Resolvers;
 using MessageAgent.Services.Models;
 using System.Diagnostics;
 
@@ -18,7 +21,7 @@ public partial class StatusActionButton : ContentView
     private static readonly TimeSpan LongPressDuration = TimeSpan.FromMilliseconds(650);
     private readonly Color actionColor = Color.FromHsla(Random.Shared.NextDouble(), 0.72, 0.45);
     private StatusActionPalette actionPalette;
-    private MessageAgentLottieSettings animationSettings = new();
+    private LottieResourceSettings animationSettings = new();
     private readonly LottiePlaybackInteraction animationInteraction;
     private readonly NativeLongPressGesture longPressGesture;
 
@@ -145,23 +148,27 @@ public partial class StatusActionButton : ContentView
 
         if (isMoreAnimation)
         {
-            animationSettings = MessageAgentLotties.GetSettings(
+            animationSettings = LottieResourceResolver.GetSettings(
                 MessageAgentLottieKeys.More,
-                AnimationSource,
+                defaultResources: DefaultResourceDictionary.Instance,
+                defaultSource: AnimationSource,
                 defaultRestingProgress: 0d,
-                defaultModifiers: CreateMoreAnimationModifiers());
+                defaultModifiers: CreateMoreAnimationModifiers(),
+                mergeModifiers: MessageAgentLottieModifiers.Merge);
         }
         else if (isMinimizeAction)
         {
-            animationSettings = MessageAgentLotties.GetSettings(
+            animationSettings = LottieResourceResolver.GetSettings(
                 MessageAgentLottieKeys.Minimize,
-                AnimationSource,
+                defaultResources: DefaultResourceDictionary.Instance,
+                defaultSource: AnimationSource,
                 defaultRestingProgress: 0d,
-                defaultModifiers: CreateMinimizeAnimationModifiers());
+                defaultModifiers: CreateMinimizeAnimationModifiers(),
+                mergeModifiers: MessageAgentLottieModifiers.Merge);
         }
         else
         {
-            animationSettings = new MessageAgentLottieSettings
+            animationSettings = new LottieResourceSettings
             {
                 Source = AnimationSource,
                 RestingProgress = 0d,
@@ -171,7 +178,7 @@ public partial class StatusActionButton : ContentView
             };
         }
 
-        AnimationModifiers = animationSettings.Modifiers ?? new LottieModifierCollection();
+        AnimationModifiers = animationSettings.Modifiers as LottieModifierCollection ?? new LottieModifierCollection();
         ActionAnimation.Speed = animationSettings.Speed ?? 1d;
         ActionAnimation.IsReversed = animationSettings.IsReversed ?? false;
         animationInteraction.RestingProgress = animationSettings.RestingProgress ?? 0d;

@@ -6,7 +6,12 @@ using MessageAgent.Services.Extensions;
 using MessageAgent.Services.Interactions;
 using MessageAgent.Services.Interfaces;
 using MessageAgent.Core.Enums.Link;
+using MessageAgent.Resources;
 using MessageAgent.Resources.ExtensionResources;
+using CollectionLib.Resources;
+using CollectionLib.Resources.ExtensionResources;
+using ResourcesLib.Models;
+using ResourcesLib.Resolvers;
 
 namespace MessageAgent.Controls.Provider;
 
@@ -58,21 +63,31 @@ public partial class MessageDetailsPage : AnimatedModalPage
 
         DialogAccentColor = message.Type.GetDialogAccent();
 
-        MessageAgentLottieSettings arrowSettings = MessageAgentLotties.GetSettings(
+        LottieResourceSettings arrowSettings = LottieResourceResolver.GetSettings(
             MessageAgentLottieKeys.Arrow,
+            defaultResources: DefaultResourceDictionary.Instance,
             defaultRestingProgress: 0.6622d,
             defaultModifiers: new LottieModifierCollection().SetColor("Stroke 1", DialogAccentColor),
-            defaultSpeed: 1.25d);
+            defaultSpeed: 1.25d,
+            mergeModifiers: MessageAgentLottieModifiers.Merge);
 
-        MessageAgentLottieSettings closeSettings = MessageAgentLotties.GetSettings(
+        LottieResourceSettings closeSettings = LottieResourceResolver.GetSettings(
             MessageAgentLottieKeys.Close,
+            defaultResources: CollectionListDefaultResourceDictionary.Instance,
             defaultRestingProgress: 1d,
-            defaultModifiers: new LottieModifierCollection().SetColor("Fill", message.Type.GetAccentContent()));
+            defaultModifiers: new LottieModifierCollection().SetColor("Fill", message.Type.GetAccentContent()),
+            applicationResourceKeys: new[] { CollectionListLottieKeys.Close, MessageAgentLottieKeys.Close },
+            defaultResourceKeys: new[] { CollectionListLottieKeys.Close },
+            mergeModifiers: MessageAgentLottieModifiers.Merge);
 
-        MessageAgentLottieSettings headerCloseSettings = MessageAgentLotties.GetSettings(
+        LottieResourceSettings headerCloseSettings = LottieResourceResolver.GetSettings(
             MessageAgentLottieKeys.Close,
+            defaultResources: CollectionListDefaultResourceDictionary.Instance,
             defaultRestingProgress: 1d,
-            defaultModifiers: new LottieModifierCollection().SetColor("Fill", DialogAccentColor));
+            defaultModifiers: new LottieModifierCollection().SetColor("Fill", DialogAccentColor),
+            applicationResourceKeys: new[] { CollectionListLottieKeys.Close, MessageAgentLottieKeys.Close },
+            defaultResourceKeys: new[] { CollectionListLottieKeys.Close },
+            mergeModifiers: MessageAgentLottieModifiers.Merge);
 
         InitializeComponent();
         BindingContext = message;
@@ -157,10 +172,10 @@ public partial class MessageDetailsPage : AnimatedModalPage
         if (!canGoNext) nextArrowInteraction.SetActive(false);
     }
 
-    private static void ApplyLottieSettings(LottieAgent.Controls.LottieView animation, MessageAgentLottieSettings settings)
+    private static void ApplyLottieSettings(LottieAgent.Controls.LottieView animation, LottieResourceSettings settings)
     {
         animation.Source = settings.Source;
-        animation.Modifiers = settings.Modifiers ?? new LottieModifierCollection();
+        animation.Modifiers = settings.Modifiers as LottieModifierCollection ?? new LottieModifierCollection();
         animation.Progress = settings.RestingProgress ?? 0d;
         animation.Speed = settings.Speed ?? 1d;
         animation.IsReversed = settings.IsReversed ?? false;

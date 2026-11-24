@@ -1,6 +1,7 @@
 using System.Globalization;
+using MessageAgent.Resources;
 using MessageAgent.Resources.ExtensionResources;
-using MessageAgent.Services.Extensions;
+using ResourcesLib.Resolvers;
 
 namespace MessageAgent.Converters;
 
@@ -16,9 +17,9 @@ public sealed class MessageAgentImageSourceConverter : IValueConverter
 
         return key switch
         {
-            MessageAgentImageKeys.Read => MessageAgentImages.Get(key, "message_read.png"),
-            MessageAgentImageKeys.Unread => MessageAgentImages.Get(key, "message_unread.png"),
-            MessageAgentImageKeys.Important => MessageAgentImages.Get(key, "important.png"),
+            MessageAgentImageKeys.Read => ImageResourceResolver.Get(key, "message_read.png", DefaultResourceDictionary.Instance),
+            MessageAgentImageKeys.Unread => ImageResourceResolver.Get(key, "message_unread.png", DefaultResourceDictionary.Instance),
+            MessageAgentImageKeys.Important => ImageResourceResolver.Get(key, "important.png", DefaultResourceDictionary.Instance),
             _ => null
         };
     }

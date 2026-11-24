@@ -5,7 +5,12 @@ using MessageAgent.Core.Models;
 using MessageAgent.Services;
 using MessageAgent.Services.Interactions;
 using MessageAgent.Services.Extensions;
+using MessageAgent.Resources;
 using MessageAgent.Resources.ExtensionResources;
+using CollectionLib.Resources;
+using CollectionLib.Resources.ExtensionResources;
+using ResourcesLib.Models;
+using ResourcesLib.Resolvers;
 
 namespace MessageAgent.Controls.Provider;
 
@@ -56,10 +61,14 @@ public partial class StatusOverflowPage : AnimatedModalPage
         PanelBackgroundColor = dark ? Color.FromRgb(34, 37, 43) : Color.FromRgb(250, 250, 248);
         ForegroundColor = dark ? Color.FromRgb(242, 244, 247) : Color.FromRgb(30, 32, 36);
 
-        MessageAgentLottieSettings closeSettings = MessageAgentLotties.GetSettings(
+        LottieResourceSettings closeSettings = LottieResourceResolver.GetSettings(
             MessageAgentLottieKeys.Close,
+            defaultResources: CollectionListDefaultResourceDictionary.Instance,
             defaultRestingProgress: 1d,
-            defaultModifiers: new LottieModifierCollection().SetColor("Fill", ForegroundColor));
+            defaultModifiers: new LottieModifierCollection().SetColor("Fill", ForegroundColor),
+            applicationResourceKeys: new[] { CollectionListLottieKeys.Close, MessageAgentLottieKeys.Close },
+            defaultResourceKeys: new[] { CollectionListLottieKeys.Close },
+            mergeModifiers: MessageAgentLottieModifiers.Merge);
 
         InitializeComponent();
         BindingContext = this;
@@ -67,7 +76,7 @@ public partial class StatusOverflowPage : AnimatedModalPage
         CloseAnimation.JsonLoader = MauiServiceProvider.GetRequiredService<ILottieJsonLoader>();
         CloseAnimation.ModifierProcessor = MauiServiceProvider.GetRequiredService<ILottieModifierProcessor>();
         CloseAnimation.Source = closeSettings.Source;
-        CloseAnimation.Modifiers = closeSettings.Modifiers ?? new LottieModifierCollection();
+        CloseAnimation.Modifiers = closeSettings.Modifiers as LottieModifierCollection ?? new LottieModifierCollection();
         CloseAnimation.Progress = closeSettings.RestingProgress ?? 1d;
         CloseAnimation.Speed = closeSettings.Speed ?? 1d;
         CloseAnimation.IsReversed = closeSettings.IsReversed ?? false;
