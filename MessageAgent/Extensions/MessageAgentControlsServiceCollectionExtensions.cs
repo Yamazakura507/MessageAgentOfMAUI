@@ -1,3 +1,4 @@
+using CollectionLib.Handlers;
 using LottieAgent.Extensions;
 using MessageAgent.Controls.Provider;
 using MessageAgent.Services;
@@ -25,6 +26,8 @@ public static class MessageAgentControlsServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddLottieAgent();
+
+        HandlerAction.Progress = new MessageAgentHandlerProgress();
 
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IVisualValueHandler, ImageVisualValueHandler>());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IVisualValueHandler, LottieVisualValueHandler>());

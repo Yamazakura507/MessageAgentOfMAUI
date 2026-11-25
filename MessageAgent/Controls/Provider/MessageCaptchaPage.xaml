@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<modal:AnimatedModalPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:modal="clr-namespace:MessageAgent.Controls.Provider.Abstract"
+    xmlns:resources="clr-namespace:MessageAgent.Resources"
+    xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
+    xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+    x:Class="MessageAgent.Controls.Provider.MessageCaptchaPage"
+    x:Name="Root"
+    BackgroundColor="Transparent"
+    Title="CAPTCHA">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <resources:DefaultResourceDictionary />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <Grid x:Name="Overlay" Padding="24" BackgroundColor="{StaticResource MessageAgent.Colors.DetailsOverlay}" Opacity="0">
+        <Border x:Name="DialogPanel"
+                Padding="20"
+                MaximumWidthRequest="600"
+                MaximumHeightRequest="760"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogSurface}"
+                Stroke="{Binding Source={x:Reference Root}, Path=AccentColor}"
+                StrokeThickness="1.5"
+                Opacity="0"
+                Scale="0.94">
+            <Border.StrokeShape>
+                <shapes:RoundRectangle CornerRadius="18" />
+            </Border.StrokeShape>
+            <ScrollView>
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="48,*,32" ColumnSpacing="12">
+                        <Image Source="message_captcha.svg"
+                               WidthRequest="42" HeightRequest="42"
+                               Aspect="AspectFit"
+                               VerticalOptions="Center" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                            <Label Text="Проверка CAPTCHA"
+                                   FontSize="19"
+                                   FontAttributes="Bold"
+                                   TextColor="{Binding Source={x:Reference Root}, Path=ForegroundColor}" />
+                            <Label Text="{Binding Source={x:Reference Root}, Path=Prompt}"
+                                   FontSize="13"
+                                   TextColor="{Binding Source={x:Reference Root}, Path=SecondaryColor}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="2"
+                                Text="×"
+                                FontSize="23"
+                                Padding="0"
+                                WidthRequest="32"
+                                HeightRequest="32"
+                                CornerRadius="16"
+                                BackgroundColor="Transparent"
+                                TextColor="{Binding Source={x:Reference Root}, Path=ForegroundColor}"
+                                Clicked="CancelButtonOnClicked"
+                                VerticalOptions="Start" />
+                    </Grid>
+
+                    <VerticalStackLayout x:Name="TextChallenge" Spacing="10">
+                        <Border Padding="14"
+                                BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogSurface}"
+                                Stroke="{Binding Source={x:Reference Root}, Path=AccentColor}"
+                                StrokeThickness="1.2">
+                            <Border.StrokeShape>
+                                <shapes:RoundRectangle CornerRadius="12" />
+                            </Border.StrokeShape>
+                            <Label x:Name="CaptchaCodeLabel"
+                                   FontSize="27"
+                                   FontAttributes="Bold"
+                                   CharacterSpacing="7"
+                                   HorizontalTextAlignment="Center"
+                                   TextColor="{Binding Source={x:Reference Root}, Path=AccentColor}" />
+                        </Border>
+                        <Entry x:Name="CaptchaAnswerEntry"
+                               Placeholder="Введите символы с изображения"
+                               MaxLength="24"
+                               ReturnType="Done" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout x:Name="ImageChallenge" IsVisible="False" Spacing="10">
+                        <Border Padding="6"
+                                BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogSurface}"
+                                Stroke="{Binding Source={x:Reference Root}, Path=AccentColor}"
+                                StrokeThickness="1.2">
+                            <Border.StrokeShape>
+                                <shapes:RoundRectangle CornerRadius="12" />
+                            </Border.StrokeShape>
+                            <skia:SKCanvasView x:Name="PuzzleCanvas"
+                                               HeightRequest="260"
+                                               HorizontalOptions="Fill"
+                                               PaintSurface="PuzzleCanvasOnPaintSurface" />
+                        </Border>
+                        <Label Text="Переместите фрагмент в пустую область. Проверка выполняется после отпускания ползунка."
+                               FontSize="12"
+                               TextColor="{Binding Source={x:Reference Root}, Path=SecondaryColor}" />
+                        <Grid x:Name="HorizontalSliderRow" ColumnDefinitions="28,*" ColumnSpacing="8">
+                            <Image Source="captcha_drag_horizontal.svg"
+                                   WidthRequest="22" HeightRequest="22"
+                                   Aspect="AspectFit"
+                                   VerticalOptions="Center" />
+                            <Slider x:Name="HorizontalSlider"
+                                    Grid.Column="1"
+                                    Minimum="0" Maximum="100"
+                                    ValueChanged="HorizontalSliderOnValueChanged"
+                                    DragCompleted="SliderOnDragCompleted" />
+                        </Grid>
+                        <Grid x:Name="VerticalSliderRow"
+                              HeightRequest="180"
+                              ColumnDefinitions="28,44"
+                              ColumnSpacing="8"
+                              HorizontalOptions="Center"
+                              IsVisible="False">
+                            <Image Source="captcha_drag_vertical.svg"
+                                   WidthRequest="22" HeightRequest="22"
+                                   Aspect="AspectFit"
+                                   VerticalOptions="Center" />
+                            <Slider x:Name="VerticalSlider"
+                                    Grid.Column="1"
+                                    Rotation="270"
+                                    WidthRequest="150"
+                                    HeightRequest="36"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center"
+                                    Minimum="0" Maximum="100"
+                                    ValueChanged="VerticalSliderOnValueChanged"
+                                    DragCompleted="SliderOnDragCompleted" />
+                        </Grid>
+                        <Label x:Name="PuzzleModeLabel"
+                               FontSize="11"
+                               HorizontalTextAlignment="Center"
+                               TextColor="{Binding Source={x:Reference Root}, Path=SecondaryColor}" />
+                    </VerticalStackLayout>
+
+                    <Label x:Name="FeedbackLabel"
+                           FontSize="12"
+                           IsVisible="False"
+                           TextColor="{Binding Source={x:Reference Root}, Path=AccentColor}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button x:Name="CancelButton"
+                                Text="Отмена"
+                                Clicked="CancelButtonOnClicked"
+                                BackgroundColor="Transparent"
+                                BorderColor="{Binding Source={x:Reference Root}, Path=AccentColor}"
+                                BorderWidth="1"
+                                TextColor="{Binding Source={x:Reference Root}, Path=AccentColor}" />
+                        <Button x:Name="VerifyButton"
+                                Grid.Column="1"
+                                Text="Проверить"
+                                Clicked="VerifyButtonOnClicked"
+                                BackgroundColor="{Binding Source={x:Reference Root}, Path=AccentColor}"
+                                TextColor="{Binding Source={x:Reference Root}, Path=AccentContentColor}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Border>
+    </Grid>
+</modal:AnimatedModalPage>
