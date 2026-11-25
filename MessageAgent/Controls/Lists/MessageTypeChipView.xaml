@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
+             x:Class="MessageAgent.Controls.Lists.MessageTypeChipView">
+    <Border x:Name="ChipBorder" 
+            Padding="6,3" 
+            HeightRequest="34" 
+            StrokeThickness="0.75">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="9" />
+        </Border.StrokeShape>
+        <Grid ColumnDefinitions="Auto,Auto,*" 
+              ColumnSpacing="5">
+            <lottie:LottieView x:Name="Animation" 
+                               WidthRequest="21" 
+                               HeightRequest="21"
+                               Progress="1" 
+                               IsPlaying="False" 
+                               IsLooping="False"
+                               BackgroundColor="Transparent" 
+                               VerticalOptions="Center" />
+            <Border x:Name="CountBadge" 
+                    Grid.Column="1" 
+                    Padding="5,1" 
+                    MinimumWidthRequest="20"
+                    StrokeThickness="0" 
+                    VerticalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="7" />
+                </Border.StrokeShape>
+                <Label x:Name="CountText" 
+                       FontSize="10" 
+                       FontAttributes="Bold"
+                       VerticalTextAlignment="Center" 
+                       HorizontalTextAlignment="Center" />
+            </Border>
+            <Label x:Name="TypeName" 
+                   Grid.Column="2" 
+                   FontSize="11"
+                   LineBreakMode="TailTruncation" 
+                   VerticalTextAlignment="Center" />
+        </Grid>
+    </Border>
+</ContentView>

@@ -199,13 +199,9 @@ public partial class StatusGridView : ContentView
         {
             bool isLastRow = rowIndex == rows.Count - 1;
 
-            HorizontalStackLayout row = new ()
-            {
-                Spacing = StatusGridLayoutCalculator.StatusSpacing,
-                HorizontalOptions = LayoutOptions.Start,
-                VerticalOptions = LayoutOptions.Start,
-                WidthRequest = availableWidth
-            };
+            StatusGridRowView row = new();
+            row.ItemsHost.Spacing = StatusGridLayoutCalculator.StatusSpacing;
+            row.ItemsHost.WidthRequest = availableWidth;
 
             foreach (StatusGridItem item in rows[rowIndex])
             {
@@ -225,7 +221,7 @@ public partial class StatusGridView : ContentView
                     statusView.MaximumWidthRequest = item.Width;
                 }
 
-                row.Children.Add(statusView);
+                row.ItemsHost.Children.Add(statusView);
             }
 
             if (isLastRow && showMore)
@@ -250,7 +246,7 @@ public partial class StatusGridView : ContentView
 
                     RebuildRows();
                 };
-                row.Children.Add(more);
+                row.ItemsHost.Children.Add(more);
             }
 
             if (isLastRow && showCollapse && !showAll)
@@ -270,7 +266,7 @@ public partial class StatusGridView : ContentView
 
                     RebuildRows();
                 };
-                row.Children.Add(collapse);
+                row.ItemsHost.Children.Add(collapse);
             }
 
             RowsPanel.Children.Add(row);
@@ -293,14 +289,9 @@ public partial class StatusGridView : ContentView
                 RebuildRows();
             };
 
-            HorizontalStackLayout actionRow = new ()
-            {
-                Spacing = StatusGridLayoutCalculator.StatusSpacing,
-                HorizontalOptions = LayoutOptions.Start,
-                VerticalOptions = LayoutOptions.Start
-            };
-
-            actionRow.Children.Add(collapse);
+            StatusGridRowView actionRow = new();
+            actionRow.ItemsHost.Spacing = StatusGridLayoutCalculator.StatusSpacing;
+            actionRow.ItemsHost.Children.Add(collapse);
             RowsPanel.Children.Add(actionRow);
         }
     }

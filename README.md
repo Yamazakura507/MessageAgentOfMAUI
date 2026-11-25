@@ -1,6 +1,11 @@
 # MessageAgent
 
 MessageAgent is a .NET MAUI notification component library built on top of [LottieAgent](../LottieAgentOfMAUI_NET10/README.md). It provides a compact interactive notification label, a details dialog, status badges, image attachments and Lottie-backed status values.
+## Platform support
+
+The current project configuration targets **Windows only**: net10.0-windows10.0.19041.0 (minimum Windows version 10.0.17763.0). This is intentional for the current release because MessageAgent depends on LottieAgent, whose Skia/Skottie MAUI implementation is also configured for Windows only. The use of .NET MAUI APIs does not imply that Android, iOS or Mac Catalyst builds are currently supported.
+
+CollectionLib and ResourcesLib are configured for Android, iOS, Mac Catalyst and Windows, but that does not make the full MessageAgent dependency graph cross-platform. Expanding MessageAgent support requires first validating and multi-targeting LottieAgent and then running builds and UI checks on each target.
 
 ## Register services
 

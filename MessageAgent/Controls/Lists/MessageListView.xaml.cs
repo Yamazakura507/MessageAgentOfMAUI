@@ -1,9 +1,6 @@
 using System.ComponentModel;
 using CollectionLib.Collections;
 using CollectionLib.Controls;
-using Microsoft.Maui.Controls.Shapes;
-using LottieAgent.Controls;
-using LottieAgent.Models;
 using MessageAgent.Core.Enums.Message;
 using MessageAgent.Core.Models;
 using MessageAgent.Core.Models.Collections;
@@ -64,18 +61,12 @@ public partial class MessageListView : MessageListViewBase
     public MessageListView()
     {
         InitializeComponent();
-
-        RegisterThemedBackgroundSurface(
-            TypeFiltersBorder,
-            Color.FromArgb("#F4F6F8"),
-            Color.FromArgb("#2C3037"));
-
+        RegisterThemedBackgroundSurface(TypeFiltersBorder, Color.FromArgb("#F4F6F8"), Color.FromArgb("#2C3037"));
         UpdateViewOptionStates();
         UpdateAppliedIndicators();
     }
 
-    protected override IEnumerable<string> GetAdditionalImageResourceKeys(string resourceKey)
-        => GetApplicationImageResourceKeys(resourceKey);
+    protected override IEnumerable<string> GetAdditionalImageResourceKeys(string resourceKey) => GetApplicationImageResourceKeys(resourceKey);
 
     private static IEnumerable<string> GetApplicationImageResourceKeys(string resourceKey)
     {
@@ -120,8 +111,7 @@ public partial class MessageListView : MessageListViewBase
     protected override void OnGroupRequested() => ShowPopup(PopupKind.Group);
     protected override void OnViewRequested() => ShowPopup(PopupKind.View);
     protected override void OnSearchOptionsRequested() => ShowPopup(PopupKind.SearchOptions);
-    protected override void OnCentralContextRequested(Point? position)
-        => ShowPopup(PopupKind.Central, position: position);
+    protected override void OnCentralContextRequested(Point? position) => ShowPopup(PopupKind.Central, position: position);
     protected override void OnPopupBackdropRequested() => HidePopup();
     protected override void OnItemsSourceReplacing(
         CollectionViewCollection<
@@ -131,8 +121,7 @@ public partial class MessageListView : MessageListViewBase
             Message, MessageFilterParametr, MessageSearchParametr, GroupMessageParametrs, MessageSortParametr,
             MessageFilterRule, MessageSearchRule, MessageGroupRule, MessageSortRule>? current)
     {
-        if (previous is not null && typeFilterRule is not null)
-            previous.FilterRules.Remove(typeFilterRule);
+        if (previous is not null && typeFilterRule is not null) previous.FilterRules.Remove(typeFilterRule);
 
         typeFilterRule = null;
         statusFilterText = string.Empty;
@@ -168,11 +157,11 @@ public partial class MessageListView : MessageListViewBase
 
         UpdateAppliedIndicators();
     }
+
     private void RefreshTypeMetadata()
     {
         List<(MessageType Type, int Count)> previousTypes = availableTypes;
-        bool hadAllSelected = previousTypes.Count > 0
-            && selectedTypeNames.SetEquals(previousTypes.Select(item => item.Type.Name));
+        bool hadAllSelected = previousTypes.Count > 0 && selectedTypeNames.SetEquals(previousTypes.Select(item => item.Type.Name));
 
         availableTypes = ItemsSource is null
             ? []
@@ -187,7 +176,9 @@ public partial class MessageListView : MessageListViewBase
         if (!hasInitializedTypes || hadAllSelected)
         {
             selectedTypeNames.Clear();
+
             foreach ((MessageType type, _) in availableTypes) selectedTypeNames.Add(type.Name);
+
             hasInitializedTypes = true;
         }
         else
@@ -245,10 +236,7 @@ public partial class MessageListView : MessageListViewBase
             return;
         }
 
-        double availableWidth = TypeRowsHost.Width > 0
-            ? Math.Max(110, TypeRowsHost.Width - 12)
-            : Math.Max(220, Width - 32);
-
+        double availableWidth = TypeRowsHost.Width > 0 ? Math.Max(110, TypeRowsHost.Width - 12) : Math.Max(220, Width - 32);
         const double moreButtonWidth = 38;
         double rowOneWidth = 42;
         double rowTwoWidth = 0;
@@ -330,102 +318,20 @@ public partial class MessageListView : MessageListViewBase
             && selectedTypeNames.Count == availableTypes.Count
             && availableTypes.All(item => selectedTypeNames.Contains(item.Type.Name));
 
-        ImageButton button = CreateIconButton(
-            MessageAgentImageKeys.AllMessageTypes,
-            "all_message_types.svg",
-            "Р’СЃРµ С‚РёРїС‹ СЃРѕРѕР±С‰РµРЅРёР№",
-            40);
-        button.Opacity = allSelected ? 1 : 0.68;
+        MessageTypeActionButtonView button = new();
+        button.Configure(
+            GetIcon(MessageAgentImageKeys.AllMessageTypes, "all_message_types.svg"),
+            "All message types",
+            allSelected);
         button.Clicked += (_, _) => ToggleAllTypes();
-
         return button;
     }
 
     private View CreateTypeChip(MessageType type, int count, bool selected, bool fullWidth = false)
     {
-        Color accent = type.AccentColor ?? Colors.SteelBlue;
-        LottieView animation = new()
-        {
-            Source = string.IsNullOrWhiteSpace(type.NotificationAnimationSource)
-                ? "Lotties/circleLable.json"
-                : type.NotificationAnimationSource,
-            Modifiers = type.NotificationAnimationModifiers ?? new LottieModifierCollection(),
-            WidthRequest = 21,
-            HeightRequest = 21,
-            Progress = 1,
-            IsPlaying = false,
-            IsLooping = false,
-            BackgroundColor = Colors.Transparent,
-            VerticalOptions = LayoutOptions.Center
-        };
-        animation.AnimationLoaded += (_, _) =>
-        {
-            animation.IsPlaying = false;
-            animation.Progress = 1;
-        };
-
-        Label countLabel = new()
-        {
-            Text = count.ToString(),
-            FontSize = 10,
-            FontAttributes = FontAttributes.Bold,
-            TextColor = accent,
-            VerticalTextAlignment = TextAlignment.Center,
-            HorizontalTextAlignment = TextAlignment.Center
-        };
-
-        Border countBadge = new()
-        {
-            Padding = new Thickness(5, 1),
-            MinimumWidthRequest = 20,
-            BackgroundColor = accent.WithAlpha(0.13f),
-            StrokeThickness = 0,
-            StrokeShape = new RoundRectangle { CornerRadius = 7 },
-            Content = countLabel,
-            VerticalOptions = LayoutOptions.Center
-        };
-
-        Label nameLabel = new()
-        {
-            Text = type.DisplayName ?? type.Name,
-            FontSize = 11,
-            FontAttributes = selected ? FontAttributes.Bold : FontAttributes.None,
-            TextColor = accent,
-            LineBreakMode = LineBreakMode.TailTruncation,
-            VerticalTextAlignment = TextAlignment.Center
-        };
-
-        Grid content = new()
-        {
-            ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Star)
-            },
-            ColumnSpacing = 5,
-            Children = { animation, countBadge, nameLabel }
-        };
-        Grid.SetColumn(countBadge, 1);
-        Grid.SetColumn(nameLabel, 2);
-
-        Border chip = new()
-        {
-            Padding = new Thickness(6, 3),
-            HeightRequest = 34,
-            WidthRequest = fullWidth ? -1 : EstimateTypeChipWidth(type),
-            HorizontalOptions = fullWidth ? LayoutOptions.Fill : LayoutOptions.Start,
-            Stroke = selected ? accent : accent.WithAlpha(0.32f),
-            StrokeThickness = selected ? 1.25 : 0.75,
-            BackgroundColor = selected ? accent.WithAlpha(0.12f) : Colors.Transparent,
-            StrokeShape = new RoundRectangle { CornerRadius = 9 },
-            Content = content
-        };
-        ToolTipProperties.SetText(chip, $"{type.DisplayName ?? type.Name}: {count}");
-
-        chip.GestureRecognizers.Add(new TapGestureRecognizer
-        {
-            Command = new Command(() => ToggleType(type.Name))
-        });
-
+        MessageTypeChipView chip = new();
+        chip.Configure(type, count, selected, fullWidth ? -1 : EstimateTypeChipWidth(type));
+        chip.Selected += (_, _) => ToggleType(type.Name);
         return chip;
     }
 
@@ -462,14 +368,12 @@ public partial class MessageListView : MessageListViewBase
 
     private void DeleteMessage(Message message)
     {
-        if (ItemsSource?.Contains(message) == true)
-            ItemsSource.Remove(message);
+        if (ItemsSource?.Contains(message) == true) ItemsSource.Remove(message);
     }
 
     protected override void OnAdditionalHeaderSizeChanged()
     {
-        if (Math.Abs(TypeRowsHost.Width - lastRenderedTypeWidth) > 1)
-            RenderTypeFilters();
+        if (Math.Abs(TypeRowsHost.Width - lastRenderedTypeWidth) > 1) RenderTypeFilters();
     }
 
     protected override void OnBuildTypesContext()
@@ -477,6 +381,7 @@ public partial class MessageListView : MessageListViewBase
         if (availableTypes.Count == 0)
         {
             AddPopupText("Р’ РєРѕР»Р»РµРєС†РёРё РїРѕРєР° РЅРµС‚ СЃРѕРѕР±С‰РµРЅРёР№.");
+
             return;
         }
 
@@ -519,8 +424,8 @@ public partial class MessageListView : MessageListViewBase
         statusFilterText = string.Empty;
 
         selectedTypeNames.Clear();
-        foreach ((MessageType type, _) in availableTypes)
-            selectedTypeNames.Add(type.Name);
+
+        foreach ((MessageType type, _) in availableTypes) selectedTypeNames.Add(type.Name);
 
         ApplyTypeFilter();
         RenderTypeFilters();
@@ -569,35 +474,29 @@ public partial class MessageListView : MessageListViewBase
     }
 
     private bool HasMessagesWithStatuses()
-        => ItemsSource?.Any(message => message.Status.Count > 0) == true
-            || (statusFilterText.Length > 0 && ItemsSource is not null);
+        => ItemsSource?.Any(message => message.Status.Count > 0) ?? false || (statusFilterText.Length > 0 && ItemsSource is not null);
 
     private void SetStatusTextFilter(string value)
     {
-        SetOwnedFilter(
-            MessageFilterParametr.ContainStatus,
-            string.IsNullOrWhiteSpace(value) ? null : value.Trim());
+        SetOwnedFilter(MessageFilterParametr.ContainStatus, string.IsNullOrWhiteSpace(value) ? null : value.Trim());
         UpdateAppliedIndicators();
     }
 
-    protected override MessageProvider CreateItemView(Message message)
-        => new MessageProvider
-        {
-            Message = message,
-            MessageShowType = MessageShowType.ShowLableAlways,
-            HorizontalOptions = LayoutOptions.Fill,
-            VerticalOptions = LayoutOptions.Center,
-            MinimumHeightRequest = 36
-        };
+    protected override MessageProvider CreateItemView(Message message) => new MessageProvider
+    {
+        Message = message,
+        MessageShowType = MessageShowType.ShowLableAlways,
+        HorizontalOptions = LayoutOptions.Fill,
+        VerticalOptions = LayoutOptions.Center,
+        MinimumHeightRequest = 36
+    };
 
     protected override View WrapItemView(Message message, View itemView)
     {
         bool isMobile = DeviceInfo.Platform == DevicePlatform.Android || DeviceInfo.Platform == DevicePlatform.iOS;
+
         ImageButton deleteButton = CreateIconButton(
-            CollectionListImageKeys.ListDelete,
-            "list_delete.svg",
-            "Удалить сообщение",
-            32);
+            CollectionListImageKeys.ListDelete, "list_delete.svg", "Удалить сообщение", 32);
         deleteButton.Opacity = 0.82;
         deleteButton.IsVisible = !isMobile;
         deleteButton.Clicked += (_, _) => DeleteMessage(message);
@@ -608,6 +507,7 @@ public partial class MessageListView : MessageListViewBase
             ColumnSpacing = 5,
             VerticalOptions = LayoutOptions.Center
         };
+
         rowContent.Children.Add(deleteButton);
         Grid.SetColumn(itemView, 1);
         rowContent.Children.Add(itemView);
@@ -615,13 +515,12 @@ public partial class MessageListView : MessageListViewBase
         SwipeItem deleteSwipeItem = new()
         {
             IconImageSource = GetIcon(CollectionListImageKeys.ListDelete, "list_delete.svg"),
-            BackgroundColor = Application.Current?.RequestedTheme == AppTheme.Dark
-                ? Color.FromArgb("#713F49")
-                : Color.FromArgb("#F2DDE0")
+            BackgroundColor = Application.Current?.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#713F49") : Color.FromArgb("#F2DDE0")
         };
-        deleteSwipeItem.Invoked += (_, _) => DeleteMessage(message);
 
+        deleteSwipeItem.Invoked += (_, _) => DeleteMessage(message);
         SwipeItems rightSwipeItems = new() { Mode = SwipeMode.Reveal };
+
         rightSwipeItems.Add(deleteSwipeItem);
 
         return new SwipeView

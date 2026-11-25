@@ -1,9 +1,7 @@
 using CollectionLib.Controls;
 using SortLib.Enums;
-using CollectionLib.Resources.ExtensionResources;
 using MessageAgent.Core.Enums.Message;
 using MessageAgent.Core.Models;
-using MessageAgent.Core.Models.Collections;
 using MessageAgent.Core.Models.Filtering;
 using MessageAgent.Core.Models.Grouping;
 using MessageAgent.Core.Models.SortRule;
