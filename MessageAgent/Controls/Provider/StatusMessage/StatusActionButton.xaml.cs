@@ -19,7 +19,7 @@ namespace MessageAgent.Controls.Provider.StatusMessage;
 public partial class StatusActionButton : ContentView
 {
     private static readonly TimeSpan LongPressDuration = TimeSpan.FromMilliseconds(650);
-    private readonly Color actionColor = Color.FromHsla(Random.Shared.NextDouble(), 0.72, 0.45);
+    private readonly Color actionColor = MessageAgentResources.CreateRandomAccentColor();
     private StatusActionPalette actionPalette;
     private LottieResourceSettings animationSettings = new();
     private readonly LottiePlaybackInteraction animationInteraction;

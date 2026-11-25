@@ -5,9 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
-    xmlns:views="clr-namespace:MessageAgent.Controls"
     xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
-    xmlns:converters="clr-namespace:MessageAgent.Converters"
+    xmlns:resources="clr-namespace:MessageAgent.Resources"
     x:Class="MessageAgent.Controls.Provider.MessageDetailsPage"
     x:Name="Root"
     BackgroundColor="Transparent"
@@ -15,20 +14,13 @@
 
     <ContentPage.Resources>
         <ResourceDictionary>
-            <converters:MessageTypeColorConverter x:Key="AccentColorConverter" />
-            <converters:MessageTypeToDialogColorConverter x:Key="DialogColorConverter" />
-            <converters:MessageTypeToTextConverter x:Key="MessageTypeToTextConverter" />
-            <converters:MessageTypeToLottieModifiersConverter x:Key="LottieModifiersConverter" />
-            <converters:ReadStateConverter x:Key="ReadStateConverter" />
-            <converters:MessageAgentImageSourceConverter x:Key="MessageAgentImageSourceConverter" />
-            <converters:MessageAgentLottieSourceConverter x:Key="MessageAgentLottieSourceConverter" />
-            <converters:HasTextConverter x:Key="HasTextConverter" />
-            <converters:CollectionCountConverter x:Key="HasItemsConverter" MinimumCount="1" />
-            <converters:CollectionCountConverter x:Key="HasMultipleItemsConverter" MinimumCount="2" />
+            <ResourceDictionary.MergedDictionaries>
+                <resources:DefaultResourceDictionary />
+            </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <Grid x:Name="Overlay" Padding="24" BackgroundColor="#96000000" Opacity="0">
+    <Grid x:Name="Overlay" Padding="24" BackgroundColor="{StaticResource MessageAgent.Colors.DetailsOverlay}" Opacity="0">
         <Border
             x:Name="DetailsPanel"
             Padding="20"
@@ -66,7 +58,7 @@
                                 <Label
                                     Text="{Binding Type, Converter={StaticResource MessageTypeToTextConverter}}"
                                     TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
-                                    FontSize="12" FontAttributes="Bold" VerticalOptions="Center" />
+                                    Style="{StaticResource MessageAgent.Styles.DialogTypeLabel}" />
                                 <HorizontalStackLayout Grid.Column="1" Spacing="5" VerticalOptions="Center">
                                     <Image
                                         Source="{Binding IsRead, Converter={StaticResource ReadStateConverter}, ConverterParameter=Image}"
@@ -79,17 +71,15 @@
                                         ToolTipProperties.Text="Важное сообщение" />
                                     <Label
                                         Text="{Binding IsRead, Converter={StaticResource ReadStateConverter}}"
-                                        FontSize="11"
-                                        TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=SecondaryForeground}"
-                                        VerticalOptions="Center" />
+                                        Style="{StaticResource MessageAgent.Styles.DialogSecondaryLabel}"
+                                        TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=SecondaryForeground}" />
                                 </HorizontalStackLayout>
                             </Grid>
                             <Label
                                 Grid.Row="1"
                                 Text="{Binding Title}"
-                                FontSize="20" FontAttributes="Bold"
-                                TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Foreground}"
-                                LineBreakMode="WordWrap" />
+                                Style="{StaticResource MessageAgent.Styles.DialogTitleLabel}"
+                                TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Foreground}" />
                         </Grid>
                         <Border
                             x:Name="HeaderCloseButton"
@@ -122,15 +112,14 @@
 
                     <statusViews:StatusGridView
                         Items="{Binding Status}"
-                        AccentColor="{Binding Type, Converter={StaticResource AccentColorConverter}}"
+                        AccentColor="{Binding Type, Converter={StaticResource MessageTypeColorConverter}}"
                         IsPaged="True" HorizontalOptions="Fill"
                         IsVisible="{Binding Status, Converter={StaticResource HasItemsConverter}}" />
 
                     <Label
                         Text="{Binding Description}"
-                        FontSize="14"
+                        Style="{StaticResource MessageAgent.Styles.DialogBodyLabel}"
                         TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Foreground}"
-                        LineBreakMode="WordWrap"
                         IsVisible="{Binding Description, Converter={StaticResource HasTextConverter}}" />
 
                     <CollectionView
@@ -146,7 +135,7 @@
                                     ColumnDefinitions="28,*"
                                     ColumnSpacing="10"
                                     Padding="8,6"
-                                    BackgroundColor="{Binding Source={x:Reference Root}, Path=LinkRowBackground}"
+                                    BackgroundColor="Transparent"
                                     BindingContextChanged="LinkRowOnBindingContextChanged"
                                     ToolTipProperties.Text="{Binding Description}">
                                     <Grid.GestureRecognizers>
@@ -162,11 +151,8 @@
                                     <Label
                                         Grid.Column="1"
                                         Text="{Binding DisplayText}"
-                                        FontSize="14"
-                                        TextDecorations="Underline"
-                                        TextColor="{Binding Source={x:Reference Root}, Path=DialogAccentColor}"
-                                        VerticalOptions="Center"
-                                        LineBreakMode="TailTruncation" />
+                                        Style="{StaticResource MessageAgent.Styles.DialogLinkLabel}"
+                                        TextColor="{Binding Source={x:Reference Root}, Path=DialogAccentColor}" />
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
@@ -228,14 +214,14 @@
                     <IndicatorView
                         x:Name="ImagesIndicator"
                         HorizontalOptions="Center"
-                        IndicatorColor="LightGray"
+                        IndicatorColor="{StaticResource MessageAgent.Colors.ImageIndicator}"
                         SelectedIndicatorColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
                         IsVisible="{Binding Images, Converter={StaticResource HasMultipleItemsConverter}}" />
 
                     <Border
                         x:Name="CloseButton"
                         Padding="14,9"
-                        BackgroundColor="{Binding Type, Converter={StaticResource AccentColorConverter}}"
+                        BackgroundColor="{Binding Type, Converter={StaticResource MessageTypeColorConverter}}"
                         StrokeThickness="0"
                         HorizontalOptions="End">
                         <Border.StrokeShape>
@@ -258,7 +244,7 @@
                             <Label
                                 Grid.Column="1"
                                 Text="Закрыть"
-                                FontSize="14"
+                                Style="{StaticResource MessageAgent.Styles.DialogBodyLabel}"
                                 TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=AccentContent}"
                                 VerticalOptions="Center" />
                         </Grid>

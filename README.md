@@ -216,6 +216,26 @@ The replacement files must be included in the application's `Resources/Images` f
 
 `ReadStateConverter` uses the overridable read/unread keys. The important-message marker uses the important key and appears immediately after the read/unread icon in the compact label and details header. It is shown only when `Message.IsImportant` is `true`; it is not part of the status collection.
 
+## Built-in colors and component styles
+
+The built-in palette and reusable view styles are centralized in MessageAgent/Resources/DefaultResourceDictionary.xaml. The library merges this dictionary into the views that consume its styles; applications do not need to merge it globally.
+
+The palette includes the built-in message-type colors, dialog and status surfaces, neutral foreground colors, swipe-delete colors and modal overlays. C# palette resolution checks Application.Resources for the same key before falling back to the library default. For example, an application can customize the built-in Info accent and dialog surface:
+
+~~~xml
+<Application.Resources>
+    <ResourceDictionary>
+        <Color x:Key="MessageAgent.Colors.Type.InfoAccent">#2E7D5B</Color>
+        <Color x:Key="MessageAgent.Colors.Type.InfoBackground">#222E7D5B</Color>
+        <Color x:Key="MessageAgent.Colors.DialogSurfaceLight">#FFFFFF</Color>
+    </ResourceDictionary>
+</Application.Resources>
+~~~
+
+Reusable styles are exposed under the MessageAgent.Styles.* keys. They cover message-type chips, status badges and action buttons, details-dialog labels and the status-description sheet. They can also be referenced by application-owned views after the default dictionary is merged into those views.
+
+MessageAgentResources is the C# access point for palette values and default resource strings. Keep algorithmic tinting, contrast correction and image/Lottie color sampling in code; only fixed palette values belong in the resource dictionary.
+
 ## MessageProvider properties
 
 | Property | Purpose |

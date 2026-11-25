@@ -3,16 +3,20 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
+    xmlns:resources="clr-namespace:MessageAgent.Resources"
     x:Class="MessageAgent.Controls.Provider.StatusMessage.StatusActionButton"
     x:Name="Root"
     BackgroundColor="Transparent">
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <resources:DefaultResourceDictionary />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentView.Resources>
     <Border
         x:Name="ActionBorder"
-        Padding="4,2"
-        StrokeThickness="1"
-        HeightRequest="25"
-        HorizontalOptions="Start"
-        VerticalOptions="Center">
+        Style="{StaticResource MessageAgent.Styles.StatusActionBorder}">
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="6" />
         </Border.StrokeShape>
@@ -24,12 +28,7 @@
             <Label
                 x:Name="ActionLabel"
                 Text="{Binding Text, Source={x:Reference Root}}"
-                FontSize="11"
-                BackgroundColor="Transparent"
-                FontAttributes="Bold"
-                HorizontalTextAlignment="Center"
-                VerticalTextAlignment="Center"
-                LineBreakMode="NoWrap"
+                Style="{StaticResource MessageAgent.Styles.StatusActionLabel}"
                 IsVisible="{Binding IsTextVisible, Source={x:Reference Root}}" />
             <lottie:LottieView
                 x:Name="ActionAnimation"

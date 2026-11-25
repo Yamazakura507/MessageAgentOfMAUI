@@ -5,21 +5,16 @@
     xmlns:controls="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
     xmlns:views="clr-namespace:MessageAgent.Controls.Provider"
     xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
-    xmlns:converters="clr-namespace:MessageAgent.Converters"
+    xmlns:resources="clr-namespace:MessageAgent.Resources"
     x:Class="MessageAgent.Controls.Provider.MessageProvider"
     x:Name="Root"
     SizeChanged="UpdatePresentationOnSizeChanged">
 
     <ContentView.Resources>
         <ResourceDictionary>
-            <converters:MessageTypeColorConverter x:Key="AccentColorConverter" />
-            <converters:MessageTypeColorConverter x:Key="BackgroundColorConverter" />
-            <converters:MessageTypeToLottieModifiersConverter x:Key="LottieModifiersConverter" />
-            <converters:MessageTitleConverter x:Key="MessageTitleConverter" />
-            <converters:ReadStateConverter x:Key="ReadStateConverter" />
-            <converters:MessageAgentImageSourceConverter x:Key="MessageAgentImageSourceConverter" />
-            <converters:MessageLabelShapeConverter x:Key="MessageLabelShapeConverter" />
-            <converters:MessageLabelShapePaddingConverter x:Key="MessageLabelShapePaddingConverter" />
+            <ResourceDictionary.MergedDictionaries>
+                <resources:DefaultResourceDictionary />
+            </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </ContentView.Resources>
 
@@ -50,9 +45,9 @@
             Grid.Column="1"
             Padding="{Binding LabelShape, Source={x:Reference Root}, Converter={StaticResource MessageLabelShapePaddingConverter}}"
             Margin="2,0,0,0"
-            Stroke="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource AccentColorConverter}}"
+            Stroke="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource MessageTypeColorConverter}}"
             StrokeThickness="1"
-            BackgroundColor="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource BackgroundColorConverter}, ConverterParameter=Background}"
+            BackgroundColor="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource MessageTypeColorConverter}, ConverterParameter=Background}"
             StrokeShape="{Binding LabelShape, Source={x:Reference Root}, Converter={StaticResource MessageLabelShapeConverter}}"
             VerticalOptions="Center"
             IsVisible="False"
@@ -81,7 +76,7 @@
                 <Label
                     x:Name="TitleLabel"
                     Grid.Column="1"
-                    TextColor="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource AccentColorConverter}}"
+                    TextColor="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource MessageTypeColorConverter}}"
                     FontSize="12"
                     LineBreakMode="TailTruncation"
                     MaxLines="1"
@@ -113,7 +108,7 @@
                                 <views:StatusValueView
                                     Status="{Binding Status}"
                                     ShowTitleOverride="{Binding ShowTitle}"
-                                    MessageAccentColor="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource AccentColorConverter}}">
+                                    MessageAccentColor="{Binding Message.Type, Source={x:Reference Root}, Converter={StaticResource MessageTypeColorConverter}}">
                                     <views:StatusValueView.GestureRecognizers>
                                         <TapGestureRecognizer Tapped="MessageLabelOnTapped" />
                                     </views:StatusValueView.GestureRecognizers>

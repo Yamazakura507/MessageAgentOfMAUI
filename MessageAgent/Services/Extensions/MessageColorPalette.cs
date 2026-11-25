@@ -1,4 +1,5 @@
 using MessageAgent.Core.Models.ExtentionKinds;
+using MessageAgent.Resources.ExtensionResources;
 using MessageAgent.Services.Models;
 
 namespace MessageAgent.Services.Extensions;
@@ -21,8 +22,12 @@ public static class MessageColorPalette
         if (type.DialogSurfaceColor is Color customSurface) return customSurface;
 
         bool dark = theme.IsDark();
-        Color neutral = dark ? Color.FromRgb(0.105f, 0.12f, 0.145f) : Color.FromRgb(0.985f, 0.982f, 0.973f);
-        double tint = dark ? 0.24 : 0.105;
+        Color neutral = MessageAgentResources.GetColor(dark
+            ? MessageAgentResources.DialogSurfaceDarkKey
+            : MessageAgentResources.DialogSurfaceLightKey);
+        double tint = MessageAgentResources.GetDouble(dark
+            ? MessageAgentResources.DialogSurfaceTintDarkKey
+            : MessageAgentResources.DialogSurfaceTintLightKey);
 
         return Mix(neutral, type.GetAccentColor(), tint);
     }
@@ -41,7 +46,9 @@ public static class MessageColorPalette
 
         if (type.DialogForegroundColor is Color custom) return EnsureContrast(custom, surface, 4.5);
 
-        Color neutral = theme.IsDark() ? Color.FromRgb(0.96f, 0.965f, 0.98f) : Color.FromRgb(0.105f, 0.11f, 0.13f);
+        Color neutral = MessageAgentResources.GetColor(theme.IsDark()
+            ? MessageAgentResources.DialogForegroundDarkKey
+            : MessageAgentResources.DialogForegroundLightKey);
 
         return EnsureContrast(neutral, surface, 7.0);
     }
@@ -60,7 +67,9 @@ public static class MessageColorPalette
 
         if (type.DialogSecondaryForegroundColor is Color custom) return EnsureContrast(custom, surface, 4.5);
 
-        Color neutral = theme.IsDark() ? Color.FromRgb(0.82f, 0.84f, 0.87f) : Color.FromRgb(0.30f, 0.32f, 0.36f);
+        Color neutral = MessageAgentResources.GetColor(theme.IsDark()
+            ? MessageAgentResources.DialogSecondaryForegroundDarkKey
+            : MessageAgentResources.DialogSecondaryForegroundLightKey);
 
         return EnsureContrast(neutral, surface, 4.5);
     }
@@ -87,7 +96,10 @@ public static class MessageColorPalette
     {
         ArgumentNullException.ThrowIfNull(type);
 
-        return EnsureContrast(type.AccentContentColor ?? Colors.White, type.GetAccentColor(), 4.5);
+        return EnsureContrast(
+            type.AccentContentColor ?? MessageAgentResources.GetColor(MessageAgentResources.AccentContentFallbackKey),
+            type.GetAccentColor(),
+            4.5);
     }
 
     /// <summary>
@@ -99,7 +111,9 @@ public static class MessageColorPalette
     {
         bool dark = theme.IsDark();
 
-        return dark ? Color.FromRgb(0.93f, 0.94f, 0.96f) : Color.FromRgb(0.14f, 0.15f, 0.17f);
+        return MessageAgentResources.GetColor(dark
+            ? MessageAgentResources.StatusTextDarkKey
+            : MessageAgentResources.StatusTextLightKey);
     }
 
     /// <summary>
@@ -111,8 +125,12 @@ public static class MessageColorPalette
     public static StatusVisualPalette CreateStatusPalette(this Color sourceColor, AppTheme? theme = null)
     {
         bool dark = theme.IsDark();
-        Color neutral = dark ? Color.FromRgb(0.13f, 0.145f, 0.17f) : Color.FromRgb(0.995f, 0.992f, 0.985f);
-        double tint = dark ? 0.26 : 0.105;
+        Color neutral = MessageAgentResources.GetColor(dark
+            ? MessageAgentResources.StatusSurfaceDarkKey
+            : MessageAgentResources.StatusSurfaceLightKey);
+        double tint = MessageAgentResources.GetDouble(dark
+            ? MessageAgentResources.StatusSurfaceTintDarkKey
+            : MessageAgentResources.StatusSurfaceTintLightKey);
         Color background = Mix(neutral, sourceColor, tint);
         Color border = EnsureContrast(sourceColor, background, 3.0);
         Color text = EnsureContrast(sourceColor, background, 4.5);
@@ -162,9 +180,15 @@ public static class MessageColorPalette
     /// </summary>
     /// <param name="type">The message type.</param>
     /// <returns>The label background color.</returns>
-    public static Color GetBackgroundColor(this MessageType type) => type is null
-        ? MessageType.Info.BackgroundColor ?? MessageType.Info.AccentColor.WithAlpha(22 / 255f)
-        : type.BackgroundColor ?? type.GetAccentColor().WithAlpha(22 / 255f);
+    public static Color GetBackgroundColor(this MessageType type)
+    {
+        float fallbackOpacity = (float)MessageAgentResources.GetDouble(MessageAgentResources.AccentBackgroundOpacityKey);
+
+        return type is null
+            ? MessageType.Info.BackgroundColor ?? MessageType.Info.AccentColor.WithAlpha(fallbackOpacity)
+            : type.BackgroundColor ?? type.GetAccentColor().WithAlpha(fallbackOpacity);
+
+    }
 
     private static bool IsDark(this AppTheme? theme) => (theme ?? Application.Current?.RequestedTheme ?? AppTheme.Light) == AppTheme.Dark;
 

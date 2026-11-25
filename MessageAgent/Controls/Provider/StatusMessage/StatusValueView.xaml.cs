@@ -2,6 +2,7 @@ using System.ComponentModel;
 using MessageAgent.Core.Enums.Status;
 using MessageAgent.Core.Extensions;
 using MessageAgent.Core.Models;
+using MessageAgent.Resources.ExtensionResources;
 using MessageAgent.Services;
 using MessageAgent.Services.Extensions;
 using MessageAgent.Services.Interfaces;
@@ -51,7 +52,8 @@ public partial class StatusValueView : ContentView
     /// Bindable property for <see cref="MessageAccentColor"/>.
     /// </summary>
     public static readonly BindableProperty MessageAccentColorProperty =
-        BindableProperty.Create(nameof(MessageAccentColor), typeof(Color), typeof(StatusValueView), Colors.Gray, propertyChanged: OnAccentColorChanged);
+        BindableProperty.Create(nameof(MessageAccentColor), typeof(Color), typeof(StatusValueView),
+            MessageAgentResources.GetColor(MessageAgentResources.StatusBorderFallbackKey), propertyChanged: OnAccentColorChanged);
 
     /// <summary>
     /// Bindable property for <see cref="MaxTitleWidth"/>.

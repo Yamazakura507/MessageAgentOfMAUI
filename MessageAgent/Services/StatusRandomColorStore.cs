@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using MessageAgent.Core.Models;
+using MessageAgent.Resources.ExtensionResources;
 
 namespace MessageAgent.Services;
 
@@ -25,7 +26,7 @@ public static class StatusRandomColorStore
     {
         ArgumentNullException.ThrowIfNull(status);
 
-        return ColorsByStatus.GetValue(status, static _ => new ColorHolder(Color.FromHsla(Random.Shared.NextDouble(), 0.72, 0.45))).Value;
+        return ColorsByStatus.GetValue(status, static _ => new ColorHolder(MessageAgentResources.CreateRandomAccentColor())).Value;
     }
 
     /// <summary>

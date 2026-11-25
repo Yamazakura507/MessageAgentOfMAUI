@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:resourceSettings="clr-namespace:ResourcesLib.Models;assembly=ResourcesLib"
+    xmlns:converters="clr-namespace:MessageAgent.Converters"
     x:Class="MessageAgent.Resources.DefaultResourceDictionary">
 
     <x:String x:Key="MessageAgent.Images.Read">message_read.png</x:String>
@@ -30,4 +31,176 @@
         RestingProgress="0"
         Speed="1"
         IsReversed="False" />
+
+    <x:String x:Key="MessageAgent.Lotties.DefaultNotification">Lotties/circleLable.json</x:String>
+
+    <!-- Shared stateless converters -->
+    <converters:MessageTypeColorConverter x:Key="MessageTypeColorConverter" />
+    <converters:MessageTypeToDialogColorConverter x:Key="DialogColorConverter" />
+    <converters:MessageTypeToTextConverter x:Key="MessageTypeToTextConverter" />
+    <converters:MessageTypeToLottieModifiersConverter x:Key="LottieModifiersConverter" />
+    <converters:ReadStateConverter x:Key="ReadStateConverter" />
+    <converters:MessageAgentImageSourceConverter x:Key="MessageAgentImageSourceConverter" />
+    <converters:MessageAgentLottieSourceConverter x:Key="MessageAgentLottieSourceConverter" />
+    <converters:HasTextConverter x:Key="HasTextConverter" />
+    <converters:CollectionCountConverter x:Key="HasItemsConverter" MinimumCount="1" />
+    <converters:CollectionCountConverter x:Key="HasMultipleItemsConverter" MinimumCount="2" />
+    <converters:MessageLabelShapeConverter x:Key="MessageLabelShapeConverter" />
+    <converters:MessageLabelShapePaddingConverter x:Key="MessageLabelShapePaddingConverter" />
+    <converters:MessageTitleConverter x:Key="MessageTitleConverter" />
+
+    <!-- Built-in message type palette -->
+    <Color x:Key="MessageAgent.Colors.Type.AlertAccent">#B8860B</Color>
+    <Color x:Key="MessageAgent.Colors.Type.AlertBackground">#16B8860B</Color>
+    <Color x:Key="MessageAgent.Colors.Type.ErrorAccent">#B30F0F</Color>
+    <Color x:Key="MessageAgent.Colors.Type.ErrorBackground">#16B30F0F</Color>
+    <Color x:Key="MessageAgent.Colors.Type.InfoAccent">#0078C2</Color>
+    <Color x:Key="MessageAgent.Colors.Type.InfoBackground">#160078C2</Color>
+    <Color x:Key="MessageAgent.Colors.Type.AccentContentFallback">#FFFFFF</Color>
+    <x:Double x:Key="MessageAgent.Palette.RandomAccentSaturation">0.72</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.RandomAccentLightness">0.45</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.DialogSurfaceTintLight">0.105</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.DialogSurfaceTintDark">0.24</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.StatusSurfaceTintLight">0.105</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.StatusSurfaceTintDark">0.26</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.AccentBackgroundOpacity">0.08627451</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.TypeCountBadgeOpacity">0.13</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.TypeChipUnselectedStrokeOpacity">0.32</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.TypeChipSelectedBackgroundOpacity">0.12</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.TypeChipSelectedStrokeThickness">1.25</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.TypeChipUnselectedStrokeThickness">0.75</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.StatusAction.FirstCircleHueOffset">-14.2687</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.StatusAction.FirstCircleSaturationOffset">-0.19208</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.StatusAction.FirstCircleLightnessOffset">0.0196</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.StatusAction.ThirdCircleHueOffset">-2.4964</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.StatusAction.ThirdCircleSaturationOffset">-0.055656</x:Double>
+    <x:Double x:Key="MessageAgent.Palette.StatusAction.ThirdCircleLightnessOffset">0.2235</x:Double>
+
+    <!-- Dialog and status palettes -->
+    <Color x:Key="MessageAgent.Colors.DialogSurfaceLight">#FBFAF8</Color>
+    <Color x:Key="MessageAgent.Colors.DialogSurfaceDark">#1B1F25</Color>
+    <Color x:Key="MessageAgent.Colors.DialogForegroundLight">#1B1C21</Color>
+    <Color x:Key="MessageAgent.Colors.DialogForegroundDark">#F5F6FA</Color>
+    <Color x:Key="MessageAgent.Colors.DialogSecondaryForegroundLight">#4D525C</Color>
+    <Color x:Key="MessageAgent.Colors.DialogSecondaryForegroundDark">#D1D6DE</Color>
+    <Color x:Key="MessageAgent.Colors.StatusTextLight">#24262B</Color>
+    <Color x:Key="MessageAgent.Colors.StatusTextDark">#EDEFF5</Color>
+    <Color x:Key="MessageAgent.Colors.StatusSurfaceLight">#FEFDFB</Color>
+    <Color x:Key="MessageAgent.Colors.StatusSurfaceDark">#21252B</Color>
+    <Color x:Key="MessageAgent.Colors.StatusBorderFallback">#808080</Color>
+    <Color x:Key="MessageAgent.Colors.SwipeDeleteSurfaceLight">#F2DDE0</Color>
+    <Color x:Key="MessageAgent.Colors.SwipeDeleteSurfaceDark">#713F49</Color>
+    <Color x:Key="MessageAgent.Colors.StatusOverflowSurfaceLight">#FAFAF8</Color>
+    <Color x:Key="MessageAgent.Colors.StatusOverflowSurfaceDark">#22252B</Color>
+    <Color x:Key="MessageAgent.Colors.StatusOverflowForegroundLight">#1E2024</Color>
+    <Color x:Key="MessageAgent.Colors.StatusOverflowForegroundDark">#F2F4F7</Color>
+    <Color x:Key="MessageAgent.Colors.TypeFiltersSurfaceLight">#F4F6F8</Color>
+    <Color x:Key="MessageAgent.Colors.TypeFiltersSurfaceDark">#2C3037</Color>
+
+    <!-- Modal surfaces -->
+    <Color x:Key="MessageAgent.Colors.DetailsOverlay">#96000000</Color>
+    <Color x:Key="MessageAgent.Colors.StatusDescriptionOverlay">#99000000</Color>
+    <Color x:Key="MessageAgent.Colors.StatusDescriptionSurfaceLight">#FFFFFF</Color>
+    <Color x:Key="MessageAgent.Colors.StatusDescriptionSurfaceDark">#252525</Color>
+    <Color x:Key="MessageAgent.Colors.StatusDescriptionGripLight">#CCCCCC</Color>
+    <Color x:Key="MessageAgent.Colors.StatusDescriptionGripDark">#666666</Color>
+    <Color x:Key="MessageAgent.Colors.StatusDescriptionTitleLight">#202020</Color>
+    <Color x:Key="MessageAgent.Colors.StatusDescriptionTitleDark">#FFFFFF</Color>
+    <Color x:Key="MessageAgent.Colors.StatusDescriptionTextLight">#404040</Color>
+    <Color x:Key="MessageAgent.Colors.StatusDescriptionTextDark">#DDDDDD</Color>
+    <Color x:Key="MessageAgent.Colors.ImageIndicator">#D3D3D3</Color>
+
+    <!-- Reusable component styles -->
+    <Style x:Key="MessageAgent.Styles.MessageTypeChipBorder" TargetType="Border">
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="HeightRequest" Value="34" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.MessageTypeCountBadge" TargetType="Border">
+        <Setter Property="Padding" Value="5,1" />
+        <Setter Property="MinimumWidthRequest" Value="20" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.MessageTypeCountLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="VerticalTextAlignment" Value="Center" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.MessageTypeNameLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="LineBreakMode" Value="TailTruncation" />
+        <Setter Property="VerticalTextAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.StatusValueBorder" TargetType="Border">
+        <Setter Property="Padding" Value="3,2" />
+        <Setter Property="Stroke" Value="{StaticResource MessageAgent.Colors.StatusBorderFallback}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.StatusNameLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="LineBreakMode" Value="TailTruncation" />
+        <Setter Property="MaxLines" Value="1" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.StatusActionBorder" TargetType="Border">
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="HeightRequest" Value="25" />
+        <Setter Property="HorizontalOptions" Value="Start" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.StatusActionLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+        <Setter Property="VerticalTextAlignment" Value="Center" />
+        <Setter Property="LineBreakMode" Value="NoWrap" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.DialogTypeLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.DialogTitleLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.DialogSecondaryLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.DialogBodyLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.DialogLinkLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextDecorations" Value="Underline" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="LineBreakMode" Value="TailTruncation" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.StatusDescriptionGrip" TargetType="BoxView">
+        <Setter Property="WidthRequest" Value="38" />
+        <Setter Property="HeightRequest" Value="4" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource MessageAgent.Colors.StatusDescriptionGripLight}, Dark={StaticResource MessageAgent.Colors.StatusDescriptionGripDark}}" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.StatusDescriptionTitle" TargetType="Label">
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MessageAgent.Colors.StatusDescriptionTitleLight}, Dark={StaticResource MessageAgent.Colors.StatusDescriptionTitleDark}}" />
+    </Style>
+    <Style x:Key="MessageAgent.Styles.StatusDescriptionText" TargetType="Label">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MessageAgent.Colors.StatusDescriptionTextLight}, Dark={StaticResource MessageAgent.Colors.StatusDescriptionTextDark}}" />
+    </Style>
 </ResourceDictionary>

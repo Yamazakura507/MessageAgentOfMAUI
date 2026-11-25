@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using LottieAgent.Models;
+using MessageAgent.Resources.ExtensionResources;
 
 namespace MessageAgent.Core.Models.ExtentionKinds;
 
@@ -10,7 +11,8 @@ namespace MessageAgent.Core.Models.ExtentionKinds;
 [TypeConverter(typeof(MessageTypeConverter))]
 public sealed class MessageType
 {
-    private const string DefaultNotificationAnimationSource = "Lotties/circleLable.json";
+    private static readonly string DefaultNotificationAnimationSource =
+        MessageAgentResources.GetString(MessageAgentResources.DefaultNotificationLottieKey);
     private const string DefaultNotificationAnimationTargetName = "info contornos";
 
     /// <summary>
@@ -18,8 +20,8 @@ public sealed class MessageType
     /// </summary>
     public static MessageType Alert { get; } = CreateBuiltIn(
         "Alert",
-        Color.FromRgba(184, 134, 11, 255),
-        Color.FromRgba(184, 134, 11, 22),
+        MessageAgentResources.GetColor(MessageAgentResources.AlertAccentKey),
+        MessageAgentResources.GetColor(MessageAgentResources.AlertBackgroundKey),
         "Предупреждение");
 
     /// <summary>
@@ -27,8 +29,8 @@ public sealed class MessageType
     /// </summary>
     public static MessageType Error { get; } = CreateBuiltIn(
         "Error",
-        Color.FromRgba(179, 15, 15, 255),
-        Color.FromRgba(179, 15, 15, 22),
+        MessageAgentResources.GetColor(MessageAgentResources.ErrorAccentKey),
+        MessageAgentResources.GetColor(MessageAgentResources.ErrorBackgroundKey),
         "Ошибка");
 
     /// <summary>
@@ -36,14 +38,14 @@ public sealed class MessageType
     /// </summary>
     public static MessageType Info { get; } = CreateBuiltIn(
         "Info",
-        Color.FromRgba(0, 120, 194, 255),
-        Color.FromRgba(0, 120, 194, 22),
+        MessageAgentResources.GetColor(MessageAgentResources.InfoAccentKey),
+        MessageAgentResources.GetColor(MessageAgentResources.InfoBackgroundKey),
         "Информация");
 
     /// <summary>
     /// Initializes an application-defined message type with default visual values.
     /// </summary>
-    public MessageType() : this("Custom", Color.FromRgba(0, 120, 194, 255), null, null)
+    public MessageType() : this("Custom", MessageAgentResources.GetColor(MessageAgentResources.InfoAccentKey), null, null)
     {
 
     }

@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using MessageAgent.Core.Extensions;
 using MessageAgent.Core.Models;
 using MessageAgent.Core.Views;
+using MessageAgent.Resources.ExtensionResources;
 
 namespace MessageAgent.Controls.Provider.StatusMessage;
 
@@ -27,7 +28,8 @@ public partial class StatusGridView : ContentView
     /// Bindable property for <see cref="AccentColor"/>.
     /// </summary>
     public static readonly BindableProperty AccentColorProperty =
-        BindableProperty.Create(nameof(AccentColor), typeof(Color), typeof(StatusGridView), Colors.Gray, propertyChanged: OnAccentColorChanged);
+        BindableProperty.Create(nameof(AccentColor), typeof(Color), typeof(StatusGridView),
+            MessageAgentResources.GetColor(MessageAgentResources.StatusBorderFallbackKey), propertyChanged: OnAccentColorChanged);
 
     /// <summary>
     /// Bindable property for <see cref="IsPaged"/>.

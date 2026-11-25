@@ -1,3 +1,4 @@
+using MessageAgent.Resources.ExtensionResources;
 using MessageAgent.Services.Models;
 
 namespace MessageAgent.Services.Extensions;
@@ -19,9 +20,15 @@ internal static class StatusActionPaletteFactory
 
         return new StatusActionPalette(
             surface,
-            surface.BorderColor.ApplyRelativeShade(-14.2687, -0.19208, 0.0196),
+            surface.BorderColor.ApplyRelativeShade(
+                MessageAgentResources.GetDouble(MessageAgentResources.StatusActionFirstCircleHueOffsetKey),
+                MessageAgentResources.GetDouble(MessageAgentResources.StatusActionFirstCircleSaturationOffsetKey),
+                MessageAgentResources.GetDouble(MessageAgentResources.StatusActionFirstCircleLightnessOffsetKey)),
             surface.BorderColor,
-            surface.BorderColor.ApplyRelativeShade(-2.4964, -0.055656, 0.2235));
+            surface.BorderColor.ApplyRelativeShade(
+                MessageAgentResources.GetDouble(MessageAgentResources.StatusActionThirdCircleHueOffsetKey),
+                MessageAgentResources.GetDouble(MessageAgentResources.StatusActionThirdCircleSaturationOffsetKey),
+                MessageAgentResources.GetDouble(MessageAgentResources.StatusActionThirdCircleLightnessOffsetKey)));
     }
 
     private static Color ApplyRelativeShade(this Color baseColor, double hueOffset, double saturationOffset, double lightnessOffset)

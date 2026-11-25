@@ -3,18 +3,21 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
+    xmlns:resources="clr-namespace:MessageAgent.Resources"
     x:Class="MessageAgent.Controls.Provider.StatusValueView"
     x:Name="Root"
     BackgroundColor="Transparent">
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <resources:DefaultResourceDictionary />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentView.Resources>
 
     <Border
         x:Name="StatusBorder"
-        Padding="3,2"
-        Stroke="#808080"
-        StrokeThickness="1"
-        BackgroundColor="Transparent"
-        HorizontalOptions="Fill"
-        VerticalOptions="Center">
+        Style="{StaticResource MessageAgent.Styles.StatusValueBorder}">
 
         <Border.StrokeShape>
             <shapes:RoundRectangle CornerRadius="6" />
@@ -39,11 +42,7 @@
             <Label
                 x:Name="NameLabel"
                 Grid.Column="1"
-                FontSize="11"
-                LineBreakMode="TailTruncation"
-                MaxLines="1"
-                HorizontalOptions="Fill"
-                VerticalOptions="Center"
+                Style="{StaticResource MessageAgent.Styles.StatusNameLabel}"
                 IsVisible="False" />
         </Grid>
     </Border>

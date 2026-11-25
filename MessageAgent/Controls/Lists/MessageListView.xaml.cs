@@ -11,6 +11,7 @@ using MessageAgent.Core.Models.SortRule;
 using MessageAgent.Controls.Provider;
 using MessageAgent.Resources.ExtensionResources;
 using CollectionLib.Resources.ExtensionResources;
+using MessageAgent.Controls.Lists.Abstract;
 
 namespace MessageAgent.Controls.Lists;
 
@@ -61,7 +62,10 @@ public partial class MessageListView : MessageListViewBase
     public MessageListView()
     {
         InitializeComponent();
-        RegisterThemedBackgroundSurface(TypeFiltersBorder, Color.FromArgb("#F4F6F8"), Color.FromArgb("#2C3037"));
+        RegisterThemedBackgroundSurface(
+            TypeFiltersBorder,
+            MessageAgentResources.GetColor(MessageAgentResources.TypeFiltersSurfaceLightKey),
+            MessageAgentResources.GetColor(MessageAgentResources.TypeFiltersSurfaceDarkKey));
         UpdateViewOptionStates();
         UpdateAppliedIndicators();
     }
@@ -189,12 +193,16 @@ public partial class MessageListView : MessageListViewBase
         ApplyTypeFilter();
     }
 
+    private bool AreAllTypesSelected() =>
+        availableTypes.Count > 0
+        && selectedTypeNames.Count == availableTypes.Count
+        && availableTypes.All(item => selectedTypeNames.Contains(item.Type.Name));
+
     private void ApplyTypeFilter()
     {
         if (ItemsSource is null) return;
 
-        bool allSelected = availableTypes.Count == selectedTypeNames.Count
-            && availableTypes.All(item => selectedTypeNames.Contains(item.Type.Name));
+        bool allSelected = AreAllTypesSelected();
 
         if (allSelected)
         {
@@ -238,6 +246,7 @@ public partial class MessageListView : MessageListViewBase
 
         double availableWidth = TypeRowsHost.Width > 0 ? Math.Max(110, TypeRowsHost.Width - 12) : Math.Max(220, Width - 32);
         const double moreButtonWidth = 38;
+        double rowSpacing = TypeRowOne.Spacing;
         double rowOneWidth = 42;
         double rowTwoWidth = 0;
         List<(MessageType Type, int Count, double Width)> firstRow = [];
@@ -248,15 +257,15 @@ public partial class MessageListView : MessageListViewBase
         {
             double chipWidth = EstimateTypeChipWidth(type);
 
-            if (rowOneWidth + chipWidth + 5 <= availableWidth)
+            if (rowOneWidth + chipWidth + rowSpacing <= availableWidth)
             {
                 firstRow.Add((type, count, chipWidth));
-                rowOneWidth += chipWidth + 5;
+                rowOneWidth += chipWidth + rowSpacing;
             }
-            else if (rowTwoWidth + chipWidth + 5 <= availableWidth)
+            else if (rowTwoWidth + chipWidth + rowSpacing <= availableWidth)
             {
                 secondRow.Add((type, count, chipWidth));
-                rowTwoWidth += chipWidth + 5;
+                rowTwoWidth += chipWidth + rowSpacing;
             }
             else
             {
@@ -266,18 +275,14 @@ public partial class MessageListView : MessageListViewBase
 
         if (overflow.Count > 0)
         {
-            while (secondRow.Count > 0 && rowTwoWidth + moreButtonWidth + 5 > availableWidth)
+            while (secondRow.Count > 0 && rowTwoWidth + moreButtonWidth + rowSpacing > availableWidth)
             {
                 (MessageType Type, int Count, double Width) last = secondRow[^1];
                 secondRow.RemoveAt(secondRow.Count - 1);
-                rowTwoWidth -= last.Width + 5;
+                rowTwoWidth -= last.Width + rowSpacing;
                 overflow.Insert(0, (last.Type, last.Count, last.Width));
             }
 
-            if (secondRow.Count == 0 && firstRow.Count == 0)
-            {
-                // The all-types action remains visible even on very narrow layouts.
-            }
         }
 
         foreach ((MessageType Type, int Count, double Width) item in firstRow) 
@@ -290,7 +295,7 @@ public partial class MessageListView : MessageListViewBase
             ImageButton moreButton = CreateIconButton(
                 CollectionListImageKeys.ListMore,
                 "list_more.svg",
-                "Р‘РѕР»СЊС€Рµ С‚РёРїРѕРІ СЃРѕРѕР±С‰РµРЅРёР№",
+                "Больше типов сообщений",
                 moreButtonWidth);
             moreButton.Clicked += (_, _) => ShowPopup(PopupKind.Types);
             TypeRowTwo.Children.Add(moreButton);
@@ -314,14 +319,12 @@ public partial class MessageListView : MessageListViewBase
 
     private View CreateAllTypesButton()
     {
-        bool allSelected = availableTypes.Count > 0
-            && selectedTypeNames.Count == availableTypes.Count
-            && availableTypes.All(item => selectedTypeNames.Contains(item.Type.Name));
+        bool allSelected = AreAllTypesSelected();
 
         MessageTypeActionButtonView button = new();
         button.Configure(
             GetIcon(MessageAgentImageKeys.AllMessageTypes, "all_message_types.svg"),
-            "All message types",
+            "Все типы сообщений",
             allSelected);
         button.Clicked += (_, _) => ToggleAllTypes();
         return button;
@@ -337,9 +340,7 @@ public partial class MessageListView : MessageListViewBase
 
     private void ToggleAllTypes()
     {
-        bool allSelected = availableTypes.Count > 0
-            && selectedTypeNames.Count == availableTypes.Count
-            && availableTypes.All(item => selectedTypeNames.Contains(item.Type.Name));
+        bool allSelected = AreAllTypesSelected();
 
         selectedTypeNames.Clear();
 
@@ -380,7 +381,7 @@ public partial class MessageListView : MessageListViewBase
     {
         if (availableTypes.Count == 0)
         {
-            AddPopupText("Р’ РєРѕР»Р»РµРєС†РёРё РїРѕРєР° РЅРµС‚ СЃРѕРѕР±С‰РµРЅРёР№.");
+            AddPopupText("В коллекции пока нет сообщений.");
 
             return;
         }
@@ -515,7 +516,9 @@ public partial class MessageListView : MessageListViewBase
         SwipeItem deleteSwipeItem = new()
         {
             IconImageSource = GetIcon(CollectionListImageKeys.ListDelete, "list_delete.svg"),
-            BackgroundColor = Application.Current?.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#713F49") : Color.FromArgb("#F2DDE0")
+            BackgroundColor = MessageAgentResources.GetColor(Application.Current?.RequestedTheme == AppTheme.Dark
+                ? MessageAgentResources.SwipeDeleteSurfaceDarkKey
+                : MessageAgentResources.SwipeDeleteSurfaceLightKey)
         };
 
         deleteSwipeItem.Invoked += (_, _) => DeleteMessage(message);

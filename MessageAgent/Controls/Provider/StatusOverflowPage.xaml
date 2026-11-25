@@ -4,7 +4,7 @@
     xmlns:modal="clr-namespace:MessageAgent.Controls.Provider.Abstract"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
-    xmlns:converters="clr-namespace:MessageAgent.Converters"
+    xmlns:resources="clr-namespace:MessageAgent.Resources"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
     x:Class="MessageAgent.Controls.Provider.StatusOverflowPage"
     x:Name="Root"
@@ -13,7 +13,9 @@
 
     <ContentPage.Resources>
         <ResourceDictionary>
-            <converters:MessageAgentLottieSourceConverter x:Key="MessageAgentLottieSourceConverter" />
+            <ResourceDictionary.MergedDictionaries>
+                <resources:DefaultResourceDictionary />
+            </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </ContentPage.Resources>
 

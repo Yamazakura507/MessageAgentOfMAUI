@@ -2,7 +2,7 @@
 <lists:MessageListViewBase
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:lists="clr-namespace:MessageAgent.Controls.Lists"
+    xmlns:lists="clr-namespace:MessageAgent.Controls.Lists.Abstract"
     x:Class="MessageAgent.Controls.Lists.MessageListView">
     <lists:MessageListViewBase.AdditionalHeaderContent>
             <Border x:Name="TypeFiltersBorder" 

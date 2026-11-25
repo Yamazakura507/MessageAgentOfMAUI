@@ -42,11 +42,6 @@ public partial class MessageDetailsPage : AnimatedModalPage
     public Color DialogAccentColor { get; }
 
     /// <summary>
-    /// Gets the background color used behind a link row.
-    /// </summary>
-    public Color LinkRowBackground { get; } = Colors.Transparent;
-
-    /// <summary>
     /// Initializes the message details dialog and its rendering dependencies.
     /// </summary>
     public MessageDetailsPage(

@@ -5,7 +5,6 @@ using MessageAgent.Core.Models;
 using MessageAgent.Services;
 using MessageAgent.Services.Interactions;
 using MessageAgent.Services.Extensions;
-using MessageAgent.Resources;
 using MessageAgent.Resources.ExtensionResources;
 using CollectionLib.Resources;
 using CollectionLib.Resources.ExtensionResources;
@@ -58,8 +57,12 @@ public partial class StatusOverflowPage : AnimatedModalPage
         this.anchorBounds = anchorBounds;
 
         bool dark = Application.Current?.RequestedTheme == AppTheme.Dark;
-        PanelBackgroundColor = dark ? Color.FromRgb(34, 37, 43) : Color.FromRgb(250, 250, 248);
-        ForegroundColor = dark ? Color.FromRgb(242, 244, 247) : Color.FromRgb(30, 32, 36);
+        PanelBackgroundColor = MessageAgentResources.GetColor(dark
+            ? MessageAgentResources.StatusOverflowSurfaceDarkKey
+            : MessageAgentResources.StatusOverflowSurfaceLightKey);
+        ForegroundColor = MessageAgentResources.GetColor(dark
+            ? MessageAgentResources.StatusOverflowForegroundDarkKey
+            : MessageAgentResources.StatusOverflowForegroundLightKey);
 
         LottieResourceSettings closeSettings = LottieResourceResolver.GetSettings(
             MessageAgentLottieKeys.Close,

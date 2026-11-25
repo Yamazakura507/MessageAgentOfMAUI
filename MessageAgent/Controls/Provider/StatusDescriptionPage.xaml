@@ -3,13 +3,21 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:modal="clr-namespace:MessageAgent.Controls.Provider.Abstract"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:resources="clr-namespace:MessageAgent.Resources"
     x:Class="MessageAgent.Controls.Provider.StatusDescriptionPage"
     BackgroundColor="Transparent"
     Shell.NavBarIsVisible="False">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <resources:DefaultResourceDictionary />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
     <Grid
         x:Name="Overlay"
-        BackgroundColor="#99000000"
+        BackgroundColor="{StaticResource MessageAgent.Colors.StatusDescriptionOverlay}"
         RowDefinitions="*,Auto"
         Opacity="0">
 
@@ -25,7 +33,7 @@
             x:Name="BottomSheet"
             Grid.Row="1"
             Padding="22,18,22,28"
-            BackgroundColor="{AppThemeBinding Light=White, Dark=#252525}"
+            BackgroundColor="{AppThemeBinding Light={StaticResource MessageAgent.Colors.StatusDescriptionSurfaceLight}, Dark={StaticResource MessageAgent.Colors.StatusDescriptionSurfaceDark}}"
             StrokeThickness="0"
             VerticalOptions="End"
             TranslationY="500">
@@ -35,26 +43,17 @@
             </Border.StrokeShape>
 
             <VerticalStackLayout Spacing="12">
-                <BoxView
-                    WidthRequest="38"
-                    HeightRequest="4"
-                    CornerRadius="2"
-                    Color="{AppThemeBinding Light=#CCCCCC, Dark=#666666}"
-                    HorizontalOptions="Center" />
+                <BoxView Style="{StaticResource MessageAgent.Styles.StatusDescriptionGrip}" />
 
                 <Label
                     x:Name="TitleLabel"
                     Text="{Binding DescriptionTitle}"
-                    FontSize="17"
-                    FontAttributes="Bold"
-                    TextColor="{AppThemeBinding Light=#202020, Dark=White}" />
+                    Style="{StaticResource MessageAgent.Styles.StatusDescriptionTitle}" />
 
                 <Label
                     x:Name="DescriptionLabel"
                     Text="{Binding DescriptionText}"
-                    FontSize="14"
-                    LineBreakMode="WordWrap"
-                    TextColor="{AppThemeBinding Light=#404040, Dark=#DDDDDD}" />
+                    Style="{StaticResource MessageAgent.Styles.StatusDescriptionText}" />
 
                 <Button
                     Text="Закрыть"

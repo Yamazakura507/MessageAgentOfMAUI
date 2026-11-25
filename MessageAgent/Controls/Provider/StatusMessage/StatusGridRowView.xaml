@@ -4,7 +4,6 @@
              x:Class="MessageAgent.Controls.Provider.StatusMessage.StatusGridRowView">
     <HorizontalStackLayout x:Name="ItemsHost" 
                            x:FieldModifier="internal"
-                           Spacing="4"
                            HorizontalOptions="Start" 
                            VerticalOptions="Start" />
 </ContentView>

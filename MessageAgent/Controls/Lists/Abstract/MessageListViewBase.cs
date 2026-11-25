@@ -6,7 +6,7 @@ using MessageAgent.Core.Models.Filtering;
 using MessageAgent.Core.Models.Grouping;
 using MessageAgent.Core.Models.SortRule;
 
-namespace MessageAgent.Controls.Lists;
+namespace MessageAgent.Controls.Lists.Abstract;
 
 /// <summary>
 /// Typed MessageAgent adapter over CollectionLib's generic list implementation.
@@ -63,63 +63,63 @@ public abstract class MessageListViewBase : CollectionListView<
     private static string FormatGroupValue(GroupMessageParametrs parameter, object? value)
     {
         if (parameter == GroupMessageParametrs.IsImportant)
-            return value is true ? "Р’Р°Р¶РЅС‹Рµ" : "РћР±С‹С‡РЅС‹Рµ";
+            return value is true ? "Важные" : "Обычные";
         if (parameter == GroupMessageParametrs.IsRead)
-            return value is true ? "РџСЂРѕС‡РёС‚Р°РЅРЅС‹Рµ" : "РќРµРїСЂРѕС‡РёС‚Р°РЅРЅС‹Рµ";
-        return value?.ToString() ?? "РќРµ Р·Р°РґР°РЅРѕ";
+            return value is true ? "Прочитанные" : "Непрочитанные";
+        return value?.ToString() ?? "Не задано";
     }
 
 
     private static string GetSearchParameterName(MessageSearchParametr parameter) => parameter switch
     {
-        MessageSearchParametr.Title => "Р—Р°РіРѕР»РѕРІРѕРє",
-        MessageSearchParametr.Description => "РћРїРёСЃР°РЅРёРµ",
-        MessageSearchParametr.TextStatuses => "РЎС‚Р°С‚СѓСЃС‹",
+        MessageSearchParametr.Title => "Заголовок",
+        MessageSearchParametr.Description => "Описание",
+        MessageSearchParametr.TextStatuses => "Статусы",
         _ => parameter.ToString()
     };
 
     private static string GetSortParameterName(MessageSortParametr parameter) => parameter switch
     {
-        MessageSortParametr.SortOrder => "РџРѕСЂСЏРґРѕРє РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ",
-        MessageSortParametr.Title => "Р—Р°РіРѕР»РѕРІРѕРє",
-        MessageSortParametr.Type => "РўРёРї",
-        MessageSortParametr.Description => "РћРїРёСЃР°РЅРёРµ",
-        MessageSortParametr.IsImportant => "Р’Р°Р¶РЅРѕСЃС‚СЊ",
-        MessageSortParametr.IsRead => "РџСЂРѕС‡РёС‚Р°РЅРЅРѕСЃС‚СЊ",
-        MessageSortParametr.StatusCount => "РљРѕР»РёС‡РµСЃС‚РІРѕ СЃС‚Р°С‚СѓСЃРѕРІ",
-        MessageSortParametr.ImageCount => "РљРѕР»РёС‡РµСЃС‚РІРѕ РёР·РѕР±СЂР°Р¶РµРЅРёР№",
-        MessageSortParametr.LinkCount => "РљРѕР»РёС‡РµСЃС‚РІРѕ СЃСЃС‹Р»РѕРє",
+        MessageSortParametr.SortOrder => "Порядок отображения",
+        MessageSortParametr.Title => "Заголовок",
+        MessageSortParametr.Type => "Тип",
+        MessageSortParametr.Description => "Описание",
+        MessageSortParametr.IsImportant => "Важность",
+        MessageSortParametr.IsRead => "Прочитанность",
+        MessageSortParametr.StatusCount => "Количество статусов",
+        MessageSortParametr.ImageCount => "Количество изображений",
+        MessageSortParametr.LinkCount => "Количество ссылок",
         _ => parameter.ToString()
     };
 
     protected override string GetSortKindDisplayName(SortKind kind) => kind switch
     {
-        SortKind.Bubble => "РџСѓР·С‹СЂСЊРєРѕРІР°СЏ",
-        SortKind.Selection => "Р’С‹Р±РѕСЂРѕРј",
-        SortKind.Insertion => "Р’СЃС‚Р°РІРєР°РјРё",
-        SortKind.Quick => "Р‘С‹СЃС‚СЂР°СЏ",
-        SortKind.Merge => "РЎР»РёСЏРЅРёРµРј",
-        SortKind.Heap => "РџРёСЂР°РјРёРґР°Р»СЊРЅР°СЏ",
+        SortKind.Bubble => "Пузырьковая",
+        SortKind.Selection => "Выбором",
+        SortKind.Insertion => "Вставками",
+        SortKind.Quick => "Быстрая",
+        SortKind.Merge => "Слиянием",
+        SortKind.Heap => "Пирамидальная",
         _ => kind.ToString()
     };
 
     private static string GetFilterParameterName(MessageFilterParametr parameter) => parameter switch
     {
-        MessageFilterParametr.IsImportant => "Р’Р°Р¶РЅС‹Рµ СЃРѕРѕР±С‰РµРЅРёСЏ",
-        MessageFilterParametr.IsRead => "РџСЂРѕС‡РёС‚Р°РЅРЅС‹Рµ",
-        MessageFilterParametr.IsStatus => "Р•СЃС‚СЊ СЃС‚Р°С‚СѓСЃС‹",
-        MessageFilterParametr.IsImage => "Р•СЃС‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ",
-        MessageFilterParametr.IsLink => "Р•СЃС‚СЊ СЃСЃС‹Р»РєРё",
-        MessageFilterParametr.ContainStatus => "РўРµРєСЃС‚ СЃС‚Р°С‚СѓСЃР°",
-        MessageFilterParametr.Type => "РўРёРї",
+        MessageFilterParametr.IsImportant => "Важные сообщения",
+        MessageFilterParametr.IsRead => "Прочитанные",
+        MessageFilterParametr.IsStatus => "Есть статусы",
+        MessageFilterParametr.IsImage => "Есть изображения",
+        MessageFilterParametr.IsLink => "Есть ссылки",
+        MessageFilterParametr.ContainStatus => "Текст статуса",
+        MessageFilterParametr.Type => "Тип",
         _ => parameter.ToString()
     };
 
     private static string GetGroupParameterName(GroupMessageParametrs parameter) => parameter switch
     {
-        GroupMessageParametrs.Type => "РўРёРї",
-        GroupMessageParametrs.IsImportant => "Р’Р°Р¶РЅРѕСЃС‚СЊ",
-        GroupMessageParametrs.IsRead => "РџСЂРѕС‡РёС‚Р°РЅРЅРѕСЃС‚СЊ",
+        GroupMessageParametrs.Type => "Тип",
+        GroupMessageParametrs.IsImportant => "Важность",
+        GroupMessageParametrs.IsRead => "Прочитанность",
         _ => parameter.ToString()
     };
 
