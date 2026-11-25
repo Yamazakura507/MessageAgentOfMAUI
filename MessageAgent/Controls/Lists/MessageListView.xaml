@@ -5,8 +5,13 @@
     xmlns:lists="clr-namespace:MessageAgent.Controls.Lists"
     x:Class="MessageAgent.Controls.Lists.MessageListView">
     <lists:MessageListViewBase.AdditionalHeaderContent>
-<Border x:Name="TypeFiltersBorder" Grid.Row="1" Padding="4" StrokeThickness="0" BackgroundColor="Transparent">
-            <VerticalStackLayout x:Name="TypeRowsHost" Spacing="4">
+            <Border x:Name="TypeFiltersBorder" 
+                    Grid.Row="1" 
+                    Padding="4" 
+                    StrokeThickness="0" 
+                    BackgroundColor="Transparent">
+            <VerticalStackLayout x:Name="TypeRowsHost" 
+                                 Spacing="4">
                 <HorizontalStackLayout x:Name="TypeRowOne" Spacing="5" />
                 <HorizontalStackLayout x:Name="TypeRowTwo" Spacing="5" IsVisible="False" />
             </VerticalStackLayout>
