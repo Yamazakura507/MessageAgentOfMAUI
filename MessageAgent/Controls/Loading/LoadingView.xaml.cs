@@ -1,10 +1,11 @@
 using System.Diagnostics;
-using System.Text.Json;
 using LottieAgent.Controls;
+using LottieAgent.Extensions;
 using LottieAgent.Services;
 using MessageAgent.Core.Enums.Loading;
 using MessageAgent.Core.Models.Loading;
-using MessageAgent.Services;
+using MessageAgent.Resources.ExtensionResources;
+using MessageAgent.Services.Extensions;
 
 namespace MessageAgent.Controls.Loading;
 
@@ -14,26 +15,6 @@ namespace MessageAgent.Controls.Loading;
 /// </summary>
 public partial class LoadingView : ContentView, IDisposable
 {
-    /// <summary>
-    /// Identifies the view hosted beneath the loading overlay.
-    /// </summary>
-    public static readonly BindableProperty HostContentProperty = BindableProperty.Create(
-        nameof(HostContent),
-        typeof(View),
-        typeof(LoadingView),
-        default(View),
-        propertyChanged: (bindable, _, newValue) => ((LoadingView)bindable).originalContent = newValue as View);
-
-    /// <summary>
-    /// Gets or sets the content displayed beneath the loading overlay.
-    /// </summary>
-    public View? HostContent
-    {
-        get => (View?)GetValue(HostContentProperty);
-        set => SetValue(HostContentProperty, value);
-    }
-    private static readonly LoadingAnimation DefaultAnimation = new("Lotties/loading.json", accentColor: Color.FromArgb("#2785D8"));
-
     private readonly Stopwatch stopwatch = new();
     private readonly Dictionary<VisualElement, bool> originalEnabledStates = new(ReferenceEqualityComparer.Instance);
     private CancellationTokenSource? executionSource;
@@ -41,6 +22,10 @@ public partial class LoadingView : ContentView, IDisposable
     private bool showBackdrop = true;
     private bool showSurface = true;
     private bool showStatus = true;
+    private bool trackDominantColor;
+    private string currentActionDescription = string.Empty;
+    private string? externalPreviousToolTip;
+    private long lastDynamicAccentTimestamp;
     private bool isRunning;
     private bool isDisposed;
     private View? originalContent;
@@ -53,6 +38,19 @@ public partial class LoadingView : ContentView, IDisposable
     private double externalPreviousHeight;
     private double animationAspectRatio = 1d;
     private LoadingStatus status = LoadingStatus.Pending;
+
+    private EventHandler? pageDisappearingHandler;
+    private EventHandler? controlUnloadedHandler;
+    private EventHandler? windowDestroyingHandler;
+
+    /// <summary>
+    /// Gets or sets the content displayed beneath the loading overlay.
+    /// </summary>
+    public View? HostContent
+    {
+        get => (View?)GetValue(HostContentProperty);
+        set => SetValue(HostContentProperty, value);
+    }
 
     /// <summary>
     /// Gets the duration of the current operation at the moment of access, or the last duration after completion.
@@ -95,7 +93,21 @@ public partial class LoadingView : ContentView, IDisposable
     /// <summary>
     /// Gets the accent color inferred from the active Lottie animation.
     /// </summary>
-    public Color AccentColor { get; private set; } = DefaultAnimation.AccentColor!;
+    public Color AccentColor { get; private set; } = MessageAgentResources.GetColor(MessageAgentColorKeys.LoadingAccent);
+
+    /// <summary>
+    /// Gets or sets whether the accent follows the dominant color of the current Lottie frame.
+    /// </summary>
+    public bool TrackDominantColor
+    {
+        get => trackDominantColor;
+        set
+        {
+            trackDominantColor = value;
+
+            if (value) UpdateDominantAccent();
+        }
+    }
 
     /// <summary>
     /// Gets or sets whether the translucent backdrop is visible.
@@ -129,6 +141,8 @@ public partial class LoadingView : ContentView, IDisposable
             OnPropertyChanged(nameof(SurfaceStrokeColor));
             OnPropertyChanged(nameof(SurfacePadding));
             OnPropertyChanged(nameof(SurfaceStrokeThickness));
+            OnPropertyChanged(nameof(PanelHorizontalOptions));
+            OnPropertyChanged(nameof(PanelVerticalOptions));
         }
     }
 
@@ -151,12 +165,12 @@ public partial class LoadingView : ContentView, IDisposable
     /// <summary>
     /// Gets the backdrop color used by XAML.
     /// </summary>
-    public Color OverlayColor => ShowBackdrop ? Color.FromArgb("#99000000") : Colors.Transparent;
+    public Color OverlayColor => ShowBackdrop ? MessageAgentResources.GetColor(MessageAgentColorKeys.LoadingOverlay) : Colors.Transparent;
 
     /// <summary>
     /// Gets the outer overlay padding.
     /// </summary>
-    public Thickness OverlayPadding => ShowBackdrop || ShowSurface ? new Thickness(18) : new Thickness(0);
+    public Thickness OverlayPadding => new Thickness(ShowBackdrop || ShowSurface ? 18 : 0);
 
     /// <summary>
     /// Gets the accent-tinted surface background used by XAML.
@@ -171,12 +185,22 @@ public partial class LoadingView : ContentView, IDisposable
     /// <summary>
     /// Gets the surface padding used by XAML.
     /// </summary>
-    public Thickness SurfacePadding => ShowSurface ? new Thickness(16) : new Thickness(0);
+    public Thickness SurfacePadding => new Thickness(ShowSurface ? 16 : 0);
 
     /// <summary>
     /// Gets the surface stroke thickness used by XAML.
     /// </summary>
     public double SurfaceStrokeThickness => ShowSurface ? 1.5d : 0d;
+
+    /// <summary>
+    /// Gets the horizontal alignment used by the loading panel.
+    /// </summary>
+    public LayoutOptions PanelHorizontalOptions => ShowSurface ? LayoutOptions.Center : LayoutOptions.Fill;
+
+    /// <summary>
+    /// Gets the vertical alignment used by the loading panel.
+    /// </summary>
+    public LayoutOptions PanelVerticalOptions => ShowSurface ? LayoutOptions.Center : LayoutOptions.Fill;
 
     /// <summary>
     /// Gets whether the status caption is visible.
@@ -186,7 +210,17 @@ public partial class LoadingView : ContentView, IDisposable
     /// <summary>
     /// Gets the foreground color used by the status caption.
     /// </summary>
-    public Color StatusColor => Color.FromArgb("#20242B");
+    public Color StatusColor => MessageAgentResources.GetColor(MessageAgentColorKeys.LoadingForeground);
+
+    /// <summary>
+    /// Identifies the view hosted beneath the loading overlay.
+    /// </summary>
+    public static readonly BindableProperty HostContentProperty = BindableProperty.Create(
+        nameof(HostContent),
+        typeof(View),
+        typeof(LoadingView),
+        default(View),
+        propertyChanged: (bindable, _, newValue) => ((LoadingView)bindable).originalContent = newValue as View);
 
     /// <summary>
     /// Initializes the loading overlay.
@@ -195,6 +229,7 @@ public partial class LoadingView : ContentView, IDisposable
     {
         InitializeComponent();
 
+        Animation.PropertyChanged += AnimationOnPropertyChanged;
         Animation.AnimationLoaded += AnimationOnLoaded;
         SizeChanged += LoadingViewOnSizeChanged;
     }
@@ -223,27 +258,18 @@ public partial class LoadingView : ContentView, IDisposable
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        ContentPage contentPage = page as ContentPage ?? throw new NotSupportedException("LoadingView.AttachTo(Page) requires a ContentPage.");
-        View content = contentPage.Content ?? throw new InvalidOperationException("The page must have content before a loading overlay can be attached.");
+        if (page is not ContentPage contentPage) throw new NotSupportedException("LoadingView.AttachTo(Page) requires a ContentPage.");
 
-        contentPage.Content = null;
+        return AttachCore(
+            getContent: () => contentPage.Content,
+            setContent: v => contentPage.Content = v,
+            subscribeCancel: cancel =>
+            {
+                EventHandler handler = (_, _) => cancel();
+                contentPage.Disappearing += handler;
 
-        LoadingView loading = new() { HostContent = content };
-
-        contentPage.Content = loading;
-
-        loading.pageDisappearingHandler = (_, _) => loading.Cancel();
-        contentPage.Disappearing += loading.pageDisappearingHandler;
-        loading.restoreHost = () =>
-        {
-            loading.HostContent = null;
-
-            if (ReferenceEquals(contentPage.Content, loading)) contentPage.Content = content;
-
-            contentPage.Disappearing -= loading.pageDisappearingHandler;
-        };
-
-        return loading;
+                return () => contentPage.Disappearing -= handler;
+            });
     }
 
     /// <summary>
@@ -254,26 +280,17 @@ public partial class LoadingView : ContentView, IDisposable
     public static LoadingView AttachTo(ContentView control)
     {
         ArgumentNullException.ThrowIfNull(control);
-        View content = control.Content ?? throw new InvalidOperationException("The ContentView must contain content before a loading overlay can be attached.");
 
-        control.Content = null;
+        return AttachCore(
+            getContent: () => control.Content,
+            setContent: v => control.Content = v,
+            subscribeCancel: cancel =>
+            {
+                EventHandler handler = (_, _) => cancel();
+                control.Unloaded += handler;
 
-        LoadingView loading = new() { HostContent = content };
-
-        control.Content = loading;
-
-        loading.controlUnloadedHandler = (_, _) => loading.Cancel();
-        control.Unloaded += loading.controlUnloadedHandler;
-        loading.restoreHost = () =>
-        {
-            loading.HostContent = null;
-
-            if (ReferenceEquals(control.Content, loading)) control.Content = content;
-
-            control.Unloaded -= loading.controlUnloadedHandler;
-        };
-
-        return loading;
+                return () => control.Unloaded -= handler;
+            });
     }
 
     /// <summary>
@@ -288,15 +305,15 @@ public partial class LoadingView : ContentView, IDisposable
         Page page = window.Page switch
         {
             ContentPage contentPage => contentPage,
-            Shell shell when shell.CurrentPage is ContentPage currentPage => currentPage,
+            Shell { CurrentPage: ContentPage currentPage } => currentPage,
             _ => throw new NotSupportedException("The window must host a ContentPage or a Shell with an active ContentPage.")
         };
 
         LoadingView loading = AttachTo(page);
 
-        loading.restoreHost += () => window.Destroying -= loading.windowDestroyingHandler;
-        loading.windowDestroyingHandler = (_, _) => loading.Cancel();
-        window.Destroying += loading.windowDestroyingHandler;
+        EventHandler handler = (_, _) => loading.Cancel();
+        window.Destroying += handler;
+        loading.restoreHost += () => window.Destroying -= handler;
 
         return loading;
     }
@@ -364,7 +381,7 @@ public partial class LoadingView : ContentView, IDisposable
         if (executionSource is not null) throw new InvalidOperationException("This LoadingView is already executing an action set.");
 
         LoadingAnimation[] choices = animations?.ToArray() ?? Array.Empty<LoadingAnimation>();
-        LoadingAnimation selected = choices.Length == 0 ? DefaultAnimation : choices[Random.Shared.Next(choices.Length)];
+        LoadingAnimation selected = choices.Length == 0 ? CreateDefaultAnimation() : choices[Random.Shared.Next(choices.Length)];
 
         using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -387,7 +404,11 @@ public partial class LoadingView : ContentView, IDisposable
                 StatusLabel.Text = string.Join(" · ", work.Select(action => action.Description)
                                                         .Where(description => !string.IsNullOrWhiteSpace(description)));
 
-                if (string.IsNullOrWhiteSpace(StatusLabel.Text)) StatusLabel.Text = "Загрузка...";
+                if (string.IsNullOrWhiteSpace(StatusLabel.Text)) StatusLabel.Text = "Loading...";
+
+                currentActionDescription = StatusLabel.Text;
+
+                ToolTipHelper.SetText(Animation, currentActionDescription);
 
                 StatusLabel.IsVisible = ShowStatus;
                 OverlayLayer.BackgroundColor = OverlayColor;
@@ -434,10 +455,13 @@ public partial class LoadingView : ContentView, IDisposable
             {
                 RestoreExternalAnimationView();
                 Animation.Stop();
+                ToolTipHelper.SetText(Animation, null);
                 RestoreHostedVisualTree();
+
                 IsRunning = false;
                 IsVisible = false;
                 StatusLabel.IsVisible = ShowStatus;
+
                 OnPropertyChanged(nameof(LastExecutionTime));
             });
 
@@ -447,6 +471,33 @@ public partial class LoadingView : ContentView, IDisposable
         if (cancelled && failure is null) Status = LoadingStatus.Cancelled;
 
         return new LoadingResult(Status, lastExecutionTime, failure);
+    }
+
+    private static LoadingView AttachCore(Func<View?> getContent, Action<View?> setContent, Func<Action, Action> subscribeCancel)
+    {
+        View content = getContent() ?? throw new InvalidOperationException("The host must contain content before a loading overlay can be attached.");
+
+        setContent(null);
+
+        LoadingView loading = new()
+        {
+            HostContent = content
+        };
+
+        setContent(loading);
+
+        Action unsubscribe = subscribeCancel(loading.Cancel);
+
+        loading.restoreHost = () =>
+        {
+            loading.HostContent = null;
+
+            if (ReferenceEquals(getContent(), loading)) setContent(content);
+
+            unsubscribe();
+        };
+
+        return loading;
     }
 
     private async Task ExecuteSequentialAsync(LoadingAction[] actions, CancellationTokenSource source)
@@ -497,24 +548,15 @@ public partial class LoadingView : ContentView, IDisposable
     {
         if (selected.View is LottieView externalView)
         {
-            Color externalAccent = selected.AccentColor ?? DefaultAnimation.AccentColor!;
+            Color externalAccent = selected.AccentColor ?? CreateDefaultAnimation().AccentColor!;
 
-            if (selected.AccentColor is null && !string.IsNullOrWhiteSpace(externalView.Source))
+            string? externalJson = externalView.SourceJson;
+
+            if (string.IsNullOrWhiteSpace(externalJson) && !string.IsNullOrWhiteSpace(externalView.Source))
             {
                 try
                 {
-                    string externalJson = await new LottieJsonLoader().LoadAsync(externalView.Source, cancellationToken);
-
-                    externalAccent = TryExtractAccentColor(externalJson) ?? externalAccent;
-
-                    using JsonDocument document = JsonDocument.Parse(externalJson);
-
-                    if (document.RootElement.TryGetProperty("w", out JsonElement width)
-                        && document.RootElement.TryGetProperty("h", out JsonElement height)
-                        && width.TryGetDouble(out double w)
-                        && height.TryGetDouble(out double h)
-                        && w > 0d && h > 0d)
-                        animationAspectRatio = w / h;
+                    externalJson = await externalView.JsonLoader.LoadAsync(externalView.Source, cancellationToken);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -522,8 +564,13 @@ public partial class LoadingView : ContentView, IDisposable
                 }
                 catch
                 {
-                    // A preconfigured Lottie view may use its own JSON loader; keep the supplied view intact.
+                    // Keep external views intact when their source cannot be inspected.
                 }
+            }
+            if (!string.IsNullOrWhiteSpace(externalJson))
+            {
+                externalAccent = selected.AccentColor ?? externalJson.GetDominantColor(externalView.Progress) ?? externalAccent;
+                animationAspectRatio = externalJson.GetCompositionAspectRatio();
             }
 
             await MainThread.InvokeOnMainThreadAsync(() =>
@@ -536,6 +583,7 @@ public partial class LoadingView : ContentView, IDisposable
                 externalPreviousIsLooping = externalView.IsLooping;
                 externalPreviousWidth = externalView.WidthRequest;
                 externalPreviousHeight = externalView.HeightRequest;
+                externalPreviousToolTip = ToolTipProperties.GetText(externalView)?.ToString();
                 restoreAnimationView = CaptureAndDetachParent(externalView);
 
                 AnimationHost.Children.Insert(0, externalView);
@@ -545,6 +593,10 @@ public partial class LoadingView : ContentView, IDisposable
                 externalView.IsLooping = true;
                 externalView.IsPlaying = true;
 
+                ToolTipHelper.SetText(externalView, currentActionDescription);
+
+                externalView.PropertyChanged += AnimationOnPropertyChanged;
+
                 SetAccentColor(externalAccent);
                 FitAnimation(externalView);
             });
@@ -553,19 +605,21 @@ public partial class LoadingView : ContentView, IDisposable
         }
 
         string json = selected.RawJson ?? await new LottieJsonLoader().LoadAsync(selected.Source!, cancellationToken);
+
         cancellationToken.ThrowIfCancellationRequested();
 
-        Color accent = selected.AccentColor ?? TryExtractAccentColor(json) ?? DefaultAnimation.AccentColor!;
+        Color accent = selected.AccentColor ?? TryExtractAccentColor(json) ?? CreateDefaultAnimation().AccentColor!;
+
         await MainThread.InvokeOnMainThreadAsync(() =>
         {
             RestoreExternalAnimationView();
-            if (!AnimationHost.Children.Contains(Animation))
-                AnimationHost.Children.Insert(0, Animation);
+
+            if (!AnimationHost.Children.Contains(Animation)) AnimationHost.Children.Insert(0, Animation);
 
             Animation.IsPlaying = false;
-            Animation.JsonLoader = new RawLottieJsonLoader(json);
             Animation.Modifiers = selected.Modifiers;
-            Animation.Source = "messageagent-loading-inline";
+            Animation.Source = null;
+            Animation.Json = json;
             Animation.IsLooping = true;
             Animation.Progress = selected.Progress;
             Animation.Speed = selected.Speed;
@@ -598,101 +652,20 @@ public partial class LoadingView : ContentView, IDisposable
         ConfigureSurfaceColors();
     }
 
-    private static Color? TryExtractAccentColor(string json)
-    {
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(json);
-
-            return FindLottieColor(document.RootElement);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    private static Color? FindLottieColor(JsonElement element)
-    {
-        if (element.ValueKind == JsonValueKind.Object)
-        {
-            if (element.TryGetProperty("c", out JsonElement color)
-                && color.ValueKind == JsonValueKind.Object
-                && color.TryGetProperty("k", out JsonElement keyframes)
-                && TryReadColor(keyframes, out Color result)) return result;
-
-            foreach (JsonProperty property in element.EnumerateObject())
-            {
-                Color? found = FindLottieColor(property.Value);
-
-                if (found is not null) return found;
-            }
-        }
-        else if (element.ValueKind == JsonValueKind.Array)
-        {
-            foreach (JsonElement child in element.EnumerateArray())
-            {
-                Color? found = FindLottieColor(child);
-
-                if (found is not null) return found;
-            }
-        }
-
-        return null;
-    }
-
-    private static bool TryReadColor(JsonElement value, out Color color)
-    {
-        color = Colors.Transparent;
-
-        if (value.ValueKind != JsonValueKind.Array || value.GetArrayLength() < 3) return false;
-        if (value[0].ValueKind == JsonValueKind.Array) return TryReadColor(value[0], out color);
-        if (value[0].ValueKind != JsonValueKind.Number || value[1].ValueKind != JsonValueKind.Number || value[2].ValueKind != JsonValueKind.Number) return false;
-
-        double red = value[0].GetDouble();
-        double green = value[1].GetDouble();
-        double blue = value[2].GetDouble();
-
-        if (red is < 0 or > 1 || green is < 0 or > 1 || blue is < 0 or > 1) return false;
-
-        double alpha = value.GetArrayLength() > 3 && value[3].ValueKind == JsonValueKind.Number ? Math.Clamp(value[3].GetDouble(), 0d, 1d) : 1d;
-        color = new Color((float)red, (float)green, (float)blue, (float)alpha);
-
-        return true;
-    }
+    private static Color? TryExtractAccentColor(string json) => json.GetDominantColor();
 
     private void UpdateAnimationAspectRatio(string json)
     {
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(json);
-            if (document.RootElement.TryGetProperty("w", out JsonElement width)
-                && document.RootElement.TryGetProperty("h", out JsonElement height)
-                && width.TryGetDouble(out double w)
-                && height.TryGetDouble(out double h)
-                && w > 0d && h > 0d)
-            {
-                animationAspectRatio = w / h;
+        animationAspectRatio = json.GetCompositionAspectRatio();
 
-                ApplyAnimationAspectRatio();
-            }
-        }
-        catch (JsonException)
-        {
-            animationAspectRatio = 1d;
-        }
+        ApplyAnimationAspectRatio();
     }
 
     private void ApplyAnimationAspectRatio()
     {
         if (Width <= 0 || Height <= 0 || animationAspectRatio <= 0) return;
 
-        double maxWidth = Math.Max(80d, Math.Min(Width - 40d, 320d));
-        double maxHeight = Math.Max(80d, Math.Min(Height - 100d, 300d));
-        double fittedWidth = Math.Min(maxWidth, maxHeight * animationAspectRatio);
-        double fittedHeight = fittedWidth / animationAspectRatio;
-
-        FitAnimation(Animation, fittedWidth, fittedHeight);
+        FitAnimation(Animation);
     }
 
     private void LoadingViewOnSizeChanged(object? sender, EventArgs e)
@@ -705,8 +678,13 @@ public partial class LoadingView : ContentView, IDisposable
     {
         if (Width <= 0 || Height <= 0) return;
 
-        double maxWidth = Math.Max(80d, Math.Min(Width - 40d, 320d));
-        double maxHeight = Math.Max(80d, Math.Min(Height - 100d, 300d));
+        double horizontalInset = OverlayPadding.Left + OverlayPadding.Right + SurfacePadding.Left + SurfacePadding.Right;
+        double verticalInset = OverlayPadding.Top + OverlayPadding.Bottom + SurfacePadding.Top + SurfacePadding.Bottom;
+
+        if (ShowStatus) verticalInset += Math.Max(StatusLabel.Height, 24d) + AnimationHost.RowSpacing;
+
+        double maxWidth = Math.Max(1d, Math.Min(Width - horizontalInset - 2d, 320d));
+        double maxHeight = Math.Max(1d, Math.Min(Height - verticalInset - 2d, 300d));
         double fittedWidth = Math.Min(maxWidth, maxHeight * animationAspectRatio);
 
         FitAnimation(view, fittedWidth, fittedWidth / animationAspectRatio);
@@ -745,14 +723,14 @@ public partial class LoadingView : ContentView, IDisposable
                 };
             case Layout layout:
                 int index = layout.Children.IndexOf(view);
+
                 layout.Children.Remove(view);
 
                 return () =>
                 {
                     if (view.Parent is null) layout.Children.Insert(Math.Clamp(index, 0, layout.Children.Count), view);
                 };
-            default:
-                return null;
+            default: return null;
         }
     }
 
@@ -761,12 +739,18 @@ public partial class LoadingView : ContentView, IDisposable
         if (activeExternalView is null) return;
 
         AnimationHost.Children.Remove(activeExternalView);
+        activeExternalView.PropertyChanged -= AnimationOnPropertyChanged;
+
+        ToolTipHelper.SetText(activeExternalView, externalPreviousToolTip);
+
+        externalPreviousToolTip = null;
         activeExternalView.IsPlaying = externalPreviousIsPlaying;
         activeExternalView.IsLooping = externalPreviousIsLooping;
         activeExternalView.WidthRequest = externalPreviousWidth;
         activeExternalView.HeightRequest = externalPreviousHeight;
 
         Action? restore = restoreAnimationView;
+
         restoreAnimationView = null;
 
         restore?.Invoke();
@@ -804,11 +788,31 @@ public partial class LoadingView : ContentView, IDisposable
         originalEnabledStates.Clear();
     }
 
-    private EventHandler? pageDisappearingHandler;
-    private EventHandler? controlUnloadedHandler;
-    private EventHandler? windowDestroyingHandler;
+    private void AnimationOnPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (TrackDominantColor && e.PropertyName == nameof(LottieView.Progress)) UpdateDominantAccent();
+    }
 
-    private void AnimationOnLoaded(object? sender, EventArgs e) { }
+    private void UpdateDominantAccent()
+    {
+        if (!TrackDominantColor) return;
+
+        long now = Stopwatch.GetTimestamp();
+        long previous = Interlocked.Read(ref lastDynamicAccentTimestamp);
+
+        if (now - previous < Stopwatch.Frequency / 8) return;
+
+        Interlocked.Exchange(ref lastDynamicAccentTimestamp, now);
+
+        LottieView current = activeExternalView ?? Animation;
+
+        if (current.SourceJson?.GetDominantColor(current.Progress) is Color dominant) SetAccentColor(dominant);
+    }
+
+    private void AnimationOnLoaded(object? sender, EventArgs e)
+    {
+        if (TrackDominantColor) UpdateDominantAccent();
+    }
 
     /// <summary>
     /// Restores the original host content and requests cancellation of any running action set.
@@ -831,6 +835,9 @@ public partial class LoadingView : ContentView, IDisposable
         else HostContent = null;
 
         SizeChanged -= LoadingViewOnSizeChanged;
+        Animation.PropertyChanged -= AnimationOnPropertyChanged;
         Animation.AnimationLoaded -= AnimationOnLoaded;
     }
+
+    private static LoadingAnimation CreateDefaultAnimation() => new("Lotties/loading.json", accentColor: MessageAgentResources.GetColor(MessageAgentColorKeys.LoadingAccent));
 }

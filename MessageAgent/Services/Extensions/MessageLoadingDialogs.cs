@@ -12,12 +12,13 @@ public static class MessageLoadingDialogs
     /// <summary>
     /// Displays a modal loading dialog and awaits the final result.
     /// </summary>
-    public static async Task<LoadingResult> ShowAsync(
+    public static async Task<LoadingResult> ShowLoadingAsync(
+        this IEnumerable<LoadingAction> actions,
         Page hostPage,
-        IEnumerable<LoadingAction> actions,
         IEnumerable<LoadingAnimation>? animations = null,
         LoadingExecutionMode executionMode = LoadingExecutionMode.Parallel,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        LoadingDialogMode dialogMode = LoadingDialogMode.Base)
     {
         ArgumentNullException.ThrowIfNull(hostPage);
         ArgumentNullException.ThrowIfNull(actions);
@@ -26,7 +27,7 @@ public static class MessageLoadingDialogs
 
         if (page is not ContentPage contentPage) throw new InvalidOperationException("The loading dialog requires a ContentPage host.");
 
-        LoadingDialogPage dialog = new();
+        LoadingDialogPage dialog = new(dialogMode);
 
         await MainThread.InvokeOnMainThreadAsync(() => contentPage.Navigation.PushModalAsync(dialog, animated: false));
 
@@ -46,27 +47,30 @@ public static class MessageLoadingDialogs
     /// <summary>
     /// Displays a modal loading dialog with one specified animation.
     /// </summary>
-    public static Task<LoadingResult> ShowAsync(
+    public static Task<LoadingResult> ShowLoadingAsync(
+        this IEnumerable<LoadingAction> actions, 
         Page hostPage,
-        IEnumerable<LoadingAction> actions,
         LoadingAnimation animation,
         LoadingExecutionMode executionMode = LoadingExecutionMode.Parallel,
-        CancellationToken cancellationToken = default) => ShowAsync(hostPage, actions, new[] { animation }, executionMode, cancellationToken);
+        CancellationToken cancellationToken = default,
+        LoadingDialogMode dialogMode = LoadingDialogMode.Base)
+            => actions.ShowLoadingAsync(hostPage, new[] { animation }, executionMode, cancellationToken, dialogMode);
 
     /// <summary>
     /// Displays a modal loading dialog in the navigation stack owned by a window.
     /// </summary>
-    public static Task<LoadingResult> ShowAsync(
+    public static Task<LoadingResult> ShowLoadingAsync(
+        this IEnumerable<LoadingAction> actions,
         Window window,
-        IEnumerable<LoadingAction> actions,
         IEnumerable<LoadingAnimation>? animations = null,
         LoadingExecutionMode executionMode = LoadingExecutionMode.Parallel,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        LoadingDialogMode dialogMode = LoadingDialogMode.Base)
     {
         ArgumentNullException.ThrowIfNull(window);
 
         Page page = window.Page ?? throw new InvalidOperationException("The window does not contain a page.");
 
-        return ShowAsync(page, actions, animations, executionMode, cancellationToken);
+        return actions.ShowLoadingAsync(page, animations, executionMode, cancellationToken, dialogMode);
     }
 }

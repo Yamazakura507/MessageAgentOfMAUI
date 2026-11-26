@@ -2,6 +2,7 @@ using MessageAgent.Controls.Provider.Abstract;
 using MessageAgent.Core.Enums.Loading;
 using MessageAgent.Core.Models.Loading;
 using MessageAgent.Resources.ExtensionResources;
+using MessageAgent.Services.Extensions;
 using MessageAgent.Services.Factory;
 using MessageAgent.Services.Interactions;
 using ResourcesLib.Models;
@@ -9,61 +10,115 @@ using ResourcesLib.Models;
 namespace MessageAgent.Controls.Loading;
 
 /// <summary>
-/// Modal loading dialog that hosts <see cref="LoadingView"/> and cancels its actions
-/// when the close, cancel, or back controls are activated.
+/// Modal loading dialog hosting LoadingView.
 /// </summary>
 public partial class LoadingDialogPage : AnimatedModalPage
 {
+    private readonly LoadingDialogMode dialogMode;
     private LottiePlaybackInteraction? closeInteraction;
     private bool isClosing;
 
+    private bool HasDecoratedDialog => dialogMode is LoadingDialogMode.Base or LoadingDialogMode.Dynamic;
+    private bool HasCloseElement => dialogMode is LoadingDialogMode.Base or LoadingDialogMode.Dynamic or LoadingDialogMode.TransparentAndCancelElement;
+    private bool HasCancelButton => dialogMode is LoadingDialogMode.Base or LoadingDialogMode.Dynamic;
+
     /// <summary>
-    /// Gets the accent color inferred from the active Lottie animation.
+    /// Gets the accent inferred from the active Lottie animation.
     /// </summary>
     public Color DialogAccentColor { get; private set; }
 
     /// <summary>
-    /// Gets the tinted surface color for the dialog panel.
+    /// Gets the resource-backed dialog surface tinted by the animation accent.
     /// </summary>
-    public Color DialogSurfaceColor => Blend(
-        Application.Current?.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#1B1F25") : Color.FromArgb("#FBFAF8"),
-        DialogAccentColor,
-        0.12f);
-
-    /// <summary>
-    /// Gets the foreground color used on the dialog surface.
-    /// </summary>
-    public Color DialogForegroundColor => Application.Current?.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#F5F6FA") : Color.FromArgb("#1B1C21");
-
-    /// <summary>
-    /// Gets a contrasting foreground color for the accent-colored cancel button.
-    /// </summary>
-    public Color DialogForegroundOnAccent => GetLuminance(DialogAccentColor) > 0.58f ? Colors.Black : Colors.White;
-
-    /// <summary>
-    /// Initializes the modal loading dialog and its interactive close animation.
-    /// </summary>
-    public LoadingDialogPage()
+    public Color DialogSurfaceColor
     {
+        get
+        {
+            if (!HasDecoratedDialog) return Colors.Transparent;
+
+            Color surface = MessageColorPalette.GetThemeColor(
+                MessageAgentResources.DialogSurfaceLightKey,
+                MessageAgentResources.DialogSurfaceDarkKey);
+            double tint = MessageColorPalette.GetThemeDouble(
+                MessageAgentResources.DialogSurfaceTintLightKey,
+                MessageAgentResources.DialogSurfaceTintDarkKey);
+
+            return Blend(surface, DialogAccentColor, (float)tint);
+        }
+    }
+
+    /// <summary>
+    /// Gets the resource-backed foreground color for dialog content.
+    /// </summary>
+    public Color DialogForegroundColor => MessageColorPalette.GetThemeColor(
+        MessageAgentResources.DialogForegroundLightKey,
+        MessageAgentResources.DialogForegroundDarkKey);
+
+    /// <summary>
+    /// Gets a contrast-safe foreground for the accent cancel button.
+    /// </summary>
+    public Color DialogForegroundOnAccent => MessageColorPalette.EnsureContrast(
+        MessageAgentResources.GetColor(MessageAgentResources.AccentContentFallbackKey),
+        DialogAccentColor,
+        4.5d);
+
+    /// <summary>
+    /// Creates a standard loading dialog.
+    /// </summary>
+    public LoadingDialogPage() : this(LoadingDialogMode.Base) { }
+
+    /// <summary>
+    /// Creates a loading dialog with the requested visual mode.
+    /// </summary>
+    public LoadingDialogPage(LoadingDialogMode dialogMode)
+    {
+        this.dialogMode = dialogMode;
         DialogAccentColor = MessageAgentResources.GetColor(MessageAgentColorKeys.LoadingAccent);
 
         InitializeComponent();
 
         BindingContext = this;
 
+        ConfigureMode();
+
+        Loading.TrackDominantColor = dialogMode == LoadingDialogMode.Dynamic;
         Loading.PropertyChanged += LoadingOnPropertyChanged;
 
-        ApplyCloseAnimation(DialogAccentColor);
+        if (HasCloseElement) ApplyCloseAnimation(DialogAccentColor);
+    }
+
+    private void ConfigureMode()
+    {
+        Header.IsVisible = HasDecoratedDialog || HasCloseElement;
+        TitleLabel.IsVisible = HasDecoratedDialog;
+        CloseButton.IsVisible = HasCloseElement;
+        CancelButton.IsVisible = HasCancelButton;
+
+        Loading.ShowBackdrop = false;
+        Loading.ShowSurface = false;
+        Loading.ShowStatus = HasDecoratedDialog;
+
+        if (HasDecoratedDialog) return;
+
+        Overlay.Padding = new Thickness(0);
+        Overlay.BackgroundColor = Colors.Transparent;
+
+        DialogPanel.Padding = new Thickness(0);
+        DialogPanel.HorizontalOptions = LayoutOptions.Fill;
+        DialogPanel.VerticalOptions = LayoutOptions.Fill;
+        DialogPanel.MaximumWidthRequest = -1;
+        DialogPanel.MaximumHeightRequest = -1;
+        DialogPanel.BackgroundColor = Colors.Transparent;
+        DialogPanel.Stroke = Colors.Transparent;
+        DialogPanel.StrokeThickness = 0;
+
+        Loading.HorizontalOptions = LayoutOptions.Fill;
+        Loading.VerticalOptions = LayoutOptions.Fill;
     }
 
     /// <summary>
-    /// Executes the action set, then closes the dialog after the result is available.
+    /// Executes actions and closes the dialog after the result is available.
     /// </summary>
-    /// <param name="actions">The actions to execute.</param>
-    /// <param name="animations">Optional animations; one is selected randomly.</param>
-    /// <param name="executionMode">Parallel by default, or sequential.</param>
-    /// <param name="cancellationToken">An external cancellation token.</param>
-    /// <returns>The operation status, elapsed time, and any exception.</returns>
     public async Task<LoadingResult> ExecuteAsync(
         IEnumerable<LoadingAction> actions,
         IEnumerable<LoadingAnimation>? animations,
@@ -93,7 +148,8 @@ public partial class LoadingDialogPage : AnimatedModalPage
             OnPropertyChanged(nameof(DialogAccentColor));
             OnPropertyChanged(nameof(DialogSurfaceColor));
             OnPropertyChanged(nameof(DialogForegroundOnAccent));
-            ApplyCloseAnimation(DialogAccentColor);
+
+            if (HasCloseElement) ApplyCloseAnimation(DialogAccentColor);
         });
     }
 
@@ -102,8 +158,8 @@ public partial class LoadingDialogPage : AnimatedModalPage
         LottieResourceSettings settings = MessageAgentLottieSettingsFactory.GetCloseSettings(accentColor);
 
         MessageAgentLottieSettingsFactory.Apply(CloseAnimation, settings);
-
         closeInteraction?.Dispose();
+
         closeInteraction = new LottiePlaybackInteraction(
             CloseAnimation,
             CloseButton,
@@ -184,6 +240,4 @@ public partial class LoadingDialogPage : AnimatedModalPage
             background.Blue + (foreground.Blue - background.Blue) * factor,
             1f);
     }
-
-    private static float GetLuminance(Color color) => 0.2126f * color.Red + 0.7152f * color.Green + 0.0722f * color.Blue;
 }

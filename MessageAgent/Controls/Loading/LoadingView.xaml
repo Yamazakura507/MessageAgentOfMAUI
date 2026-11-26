@@ -32,8 +32,8 @@
                 Padding="{Binding SurfacePadding, Source={x:Reference Root}}"
                 MaximumWidthRequest="360"
                 MaximumHeightRequest="340"
-                HorizontalOptions="Center"
-                VerticalOptions="Center"
+                HorizontalOptions="{Binding PanelHorizontalOptions, Source={x:Reference Root}}"
+                VerticalOptions="{Binding PanelVerticalOptions, Source={x:Reference Root}}"
                 BackgroundColor="{Binding SurfaceColor, Source={x:Reference Root}}"
                 Stroke="{Binding SurfaceStrokeColor, Source={x:Reference Root}}"
                 StrokeThickness="{Binding SurfaceStrokeThickness, Source={x:Reference Root}}">
@@ -43,8 +43,6 @@
                 <Grid x:Name="AnimationHost" RowDefinitions="*,Auto" RowSpacing="8">
                     <lottie:LottieView
                         x:Name="Animation"
-                        WidthRequest="220"
-                        HeightRequest="220"
                         HorizontalOptions="Center"
                         VerticalOptions="Center"
                         IsPlaying="False"

@@ -35,4 +35,19 @@ public static class MessageAgentColorKeys
     /// Loading animation accent and loading dialog primary color.
     /// </summary>
     public const string LoadingAccent = "MessageAgent.Colors.Loading.Accent";
+
+    /// <summary>
+    /// Loading overlay backdrop.
+    /// </summary>
+    public const string LoadingOverlay = "MessageAgent.Colors.LoadingOverlay";
+
+    /// <summary>
+    /// Loading surface background.
+    /// </summary>
+    public const string LoadingSurface = "MessageAgent.Colors.LoadingSurface";
+
+    /// <summary>
+    /// Loading status text foreground.
+    /// </summary>
+    public const string LoadingForeground = "MessageAgent.Colors.LoadingForeground";
 }

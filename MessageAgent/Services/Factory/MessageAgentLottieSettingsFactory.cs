@@ -2,7 +2,6 @@ using CollectionLib.Resources;
 using CollectionLib.Resources.ExtensionResources;
 using LottieAgent.Controls;
 using LottieAgent.Models;
-using MessageAgent.Resources.ExtensionResources;
 using MessageAgent.Services.Extensions;
 using ResourcesLib.Models;
 using ResourcesLib.Resolvers;
@@ -10,20 +9,19 @@ using ResourcesLib.Resolvers;
 namespace MessageAgent.Services.Factory;
 
 /// <summary>
-/// Creates shared Lottie settings using application-overridable MessageAgent resources.
+/// Creates shared Lottie settings using application-overridable resources.
 /// </summary>
 internal static class MessageAgentLottieSettingsFactory
 {
     /// <summary>
-    /// Resolves the shared close animation with the requested fill color.
+    /// Resolves CollectionLib's shared close animation with the requested fill color.
     /// </summary>
-    public static LottieResourceSettings GetCloseSettings(Color fillColor)
-        => LottieResourceResolver.GetSettings(
-            MessageAgentLottieKeys.Close,
+    public static LottieResourceSettings GetCloseSettings(Color fillColor) => LottieResourceResolver.GetSettings(
+            CollectionListLottieKeys.Close,
             defaultResources: CollectionListDefaultResourceDictionary.Instance,
             defaultRestingProgress: 1d,
             defaultModifiers: new LottieModifierCollection().SetColor("Fill", fillColor),
-            applicationResourceKeys: new[] { CollectionListLottieKeys.Close, MessageAgentLottieKeys.Close },
+            applicationResourceKeys: new[] { CollectionListLottieKeys.Close },
             defaultResourceKeys: new[] { CollectionListLottieKeys.Close },
             mergeModifiers: MessageAgentLottieModifiers.Merge);
 

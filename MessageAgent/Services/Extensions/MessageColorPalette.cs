@@ -190,6 +190,33 @@ public static class MessageColorPalette
 
     }
 
+    /// <summary>
+    /// Determines whether the application currently uses the dark theme.
+    /// </summary>
+    public static bool IsDarkTheme() => (Application.Current?.RequestedTheme ?? AppTheme.Light) == AppTheme.Dark;
+
+    /// <summary>
+    /// Resolves a light or dark application-overridable color resource.
+    /// </summary>
+    public static Color GetThemeColor(string lightResourceKey, string darkResourceKey)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(lightResourceKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(darkResourceKey);
+
+        return MessageAgentResources.GetColor(IsDarkTheme() ? darkResourceKey : lightResourceKey);
+    }
+
+    /// <summary>
+    /// Resolves a light or dark application-overridable numeric resource.
+    /// </summary>
+    public static double GetThemeDouble(string lightResourceKey, string darkResourceKey)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(lightResourceKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(darkResourceKey);
+
+        return MessageAgentResources.GetDouble(IsDarkTheme() ? darkResourceKey : lightResourceKey);
+    }
+
     private static bool IsDark(this AppTheme? theme) => (theme ?? Application.Current?.RequestedTheme ?? AppTheme.Light) == AppTheme.Dark;
 
     private static Color Opaque(this Color color) => Color.FromRgb(color.Red, color.Green, color.Blue);

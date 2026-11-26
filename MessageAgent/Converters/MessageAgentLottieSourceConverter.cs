@@ -9,6 +9,7 @@ namespace MessageAgent.Converters;
 
 /// <summary>
 /// Converts a MessageAgent Lottie key into its application-overridable animation source.
+/// The legacy close key is an alias for CollectionLib's shared close resource.
 /// </summary>
 public sealed class MessageAgentLottieSourceConverter : IValueConverter
 {
@@ -16,34 +17,29 @@ public sealed class MessageAgentLottieSourceConverter : IValueConverter
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         string? key = parameter?.ToString();
-
         return key switch
         {
             MessageAgentLottieKeys.Arrow => ResolveSource(key, "Lotties/arrow.json"),
-            MessageAgentLottieKeys.Close => ResolveSource(key, "Lotties/close.json"),
+            MessageAgentLottieKeys.Close => ResolveSharedCloseSource(),
             MessageAgentLottieKeys.More => ResolveSource(key, "Lotties/more_point.json"),
             MessageAgentLottieKeys.Minimize => ResolveSource(key, "Lotties/minimize.json"),
             _ => null
         };
     }
 
-    private static string ResolveSource(string key, string fallbackSource)
-    {
-        bool isSharedClose = key == MessageAgentLottieKeys.Close;
+    private static string ResolveSharedCloseSource() => LottieResourceResolver.GetSettings(
+            CollectionListLottieKeys.Close,
+            defaultResources: CollectionListDefaultResourceDictionary.Instance,
+            defaultRestingProgress: 1d,
+            applicationResourceKeys: new[] { CollectionListLottieKeys.Close },
+            defaultResourceKeys: new[] { CollectionListLottieKeys.Close }).Source ?? string.Empty;
 
-        return LottieResourceResolver.GetSource(
+    private static string ResolveSource(string key, string fallbackSource) => LottieResourceResolver.GetSource(
             key,
-            defaultResources: isSharedClose
-                ? CollectionListDefaultResourceDictionary.Instance
-                : DefaultResourceDictionary.Instance,
+            defaultResources: DefaultResourceDictionary.Instance,
             defaultSource: fallbackSource,
-            applicationResourceKeys: isSharedClose
-                ? new[] { CollectionListLottieKeys.Close, key }
-                : new[] { key },
-            defaultResourceKeys: isSharedClose
-                ? new[] { CollectionListLottieKeys.Close }
-                : new[] { key });
-    }
+            applicationResourceKeys: new[] { key },
+            defaultResourceKeys: new[] { key });
 
     /// <inheritdoc />
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
