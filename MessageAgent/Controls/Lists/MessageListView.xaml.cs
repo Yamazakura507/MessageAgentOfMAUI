@@ -12,6 +12,7 @@ using MessageAgent.Controls.Provider;
 using MessageAgent.Resources.ExtensionResources;
 using CollectionLib.Resources.ExtensionResources;
 using MessageAgent.Controls.Lists.Abstract;
+using CollectionLib.Enums;
 
 namespace MessageAgent.Controls.Lists;
 
@@ -38,10 +39,12 @@ public partial class MessageListView : MessageListViewBase
     /// Provides the historical MessageListView identifier for the shared header title property.
     /// </summary>
     public new static readonly BindableProperty TitleProperty = CollectionListViewBase.TitleProperty;
+
     /// <summary>
     /// Provides the historical MessageListView identifier for the shared header icon property.
     /// </summary>
     public new static readonly BindableProperty IconProperty = CollectionListViewBase.IconProperty;
+
     /// <summary>
     /// Provides the historical MessageListView identifier for the shared dock title property.
     /// </summary>
@@ -70,7 +73,9 @@ public partial class MessageListView : MessageListViewBase
         UpdateAppliedIndicators();
     }
 
-    /// <summary>Provides application-level image resource keys as fallbacks for shared list icons.</summary>
+    /// <summary>
+    /// Provides application-level image resource keys as fallbacks for shared list icons.
+    /// </summary>
     /// <param name="resourceKey">The resource key requested by the shared collection-list control.</param>
     /// <returns>The resource keys to try when resolving the image.</returns>
     protected override IEnumerable<string> GetAdditionalImageResourceKeys(string resourceKey) => GetApplicationImageResourceKeys(resourceKey);
@@ -113,22 +118,45 @@ public partial class MessageListView : MessageListViewBase
         if (!string.IsNullOrWhiteSpace(legacyKey)) yield return legacyKey;
     }
 
-    /// <summary>Opens the sorting options popup.</summary>
+    /// <summary>
+    /// Opens the sorting options popup.
+    /// </summary>
     protected override void OnSortRequested() => ShowPopup(PopupKind.Sort);
-    /// <summary>Opens the filtering options popup.</summary>
+
+    /// <summary>
+    /// Opens the filtering options popup.
+    /// </summary>
     protected override void OnFilterRequested() => ShowPopup(PopupKind.Filter);
-    /// <summary>Opens the grouping options popup.</summary>
+
+    /// <summary>
+    /// Opens the grouping options popup.
+    /// </summary>
     protected override void OnGroupRequested() => ShowPopup(PopupKind.Group);
-    /// <summary>Opens the view-mode options popup.</summary>
+
+    /// <summary>
+    /// Opens the view-mode options popup.
+    /// </summary>
     protected override void OnViewRequested() => ShowPopup(PopupKind.View);
-    /// <summary>Opens the search configuration popup.</summary>
+
+    /// <summary>
+    /// Opens the search configuration popup.
+    /// </summary>
     protected override void OnSearchOptionsRequested() => ShowPopup(PopupKind.SearchOptions);
-    /// <summary>Opens the central context popup at the requested location.</summary>
+
+    /// <summary>
+    /// Opens the central context popup at the requested location.
+    /// </summary>
     /// <param name="position">The optional location used to position the popup.</param>
     protected override void OnCentralContextRequested(Point? position) => ShowPopup(PopupKind.Central, position: position);
-    /// <summary>Closes the active popup when its backdrop is activated.</summary>
+
+    /// <summary>
+    /// Closes the active popup when its backdrop is activated.
+    /// </summary>
     protected override void OnPopupBackdropRequested() => HidePopup();
-    /// <summary>Clears collection-specific type and status filter state before the source collection is replaced.</summary>
+
+    /// <summary>
+    /// Clears collection-specific type and status filter state before the source collection is replaced.
+    /// </summary>
     /// <param name="previous">The collection currently assigned to the control, if any.</param>
     /// <param name="current">The collection that is about to be assigned, if any.</param>
     protected override void OnItemsSourceReplacing(
@@ -143,12 +171,16 @@ public partial class MessageListView : MessageListViewBase
 
         typeFilterRule = null;
         statusFilterText = string.Empty;
+
         availableTypes.Clear();
         selectedTypeNames.Clear();
+
         hasInitializedTypes = false;
     }
 
-    /// <summary>Refreshes type metadata, type filters, search indicators, and applied-filter indicators after source replacement.</summary>
+    /// <summary>
+    /// Refreshes type metadata, type filters, search indicators, and applied-filter indicators after source replacement.
+    /// </summary>
     protected override void OnItemsSourceReplaced()
     {
         RefreshTypeMetadata();
@@ -157,7 +189,9 @@ public partial class MessageListView : MessageListViewBase
         UpdateAppliedIndicators();
     }
 
-    /// <summary>Refreshes the available message types and applied-filter indicators after the source collection changes.</summary>
+    /// <summary>
+    /// Refreshes the available message types and applied-filter indicators after the source collection changes.
+    /// </summary>
     protected override void OnSourceCollectionChanged()
     {
         RefreshTypeMetadata();
@@ -165,7 +199,9 @@ public partial class MessageListView : MessageListViewBase
         UpdateAppliedIndicators();
     }
 
-    /// <summary>Updates type metadata and filter indicators when a source message property changes.</summary>
+    /// <summary>
+    /// Updates type metadata and filter indicators when a source message property changes.
+    /// </summary>
     /// <param name="message">The message whose property changed.</param>
     /// <param name="e">Details about the changed property.</param>
     protected override void OnSourceItemPropertyChanged(Message message, PropertyChangedEventArgs e)
@@ -228,6 +264,7 @@ public partial class MessageListView : MessageListViewBase
             if (typeFilterRule is not null)
             {
                 ItemsSource.FilterRules.Remove(typeFilterRule);
+
                 typeFilterRule = null;
             }
 
@@ -252,6 +289,7 @@ public partial class MessageListView : MessageListViewBase
     {
         TypeRowOne.Children.Clear();
         TypeRowTwo.Children.Clear();
+
         TypeRowTwo.IsVisible = false;
 
         TypeRowOne.Children.Add(CreateAllTypesButton());
@@ -279,11 +317,13 @@ public partial class MessageListView : MessageListViewBase
             if (rowOneWidth + chipWidth + rowSpacing <= availableWidth)
             {
                 firstRow.Add((type, count, chipWidth));
+
                 rowOneWidth += chipWidth + rowSpacing;
             }
             else if (rowTwoWidth + chipWidth + rowSpacing <= availableWidth)
             {
                 secondRow.Add((type, count, chipWidth));
+
                 rowTwoWidth += chipWidth + rowSpacing;
             }
             else
@@ -297,8 +337,11 @@ public partial class MessageListView : MessageListViewBase
             while (secondRow.Count > 0 && rowTwoWidth + moreButtonWidth + rowSpacing > availableWidth)
             {
                 (MessageType Type, int Count, double Width) last = secondRow[^1];
+
                 secondRow.RemoveAt(secondRow.Count - 1);
+
                 rowTwoWidth -= last.Width + rowSpacing;
+
                 overflow.Insert(0, (last.Type, last.Count, last.Width));
             }
 
@@ -311,13 +354,11 @@ public partial class MessageListView : MessageListViewBase
 
         if (overflow.Count > 0)
         {
-            ImageButton moreButton = CreateIconButton(
-                CollectionListImageKeys.ListMore,
-                "list_more.svg",
-                "Больше типов сообщений",
-                moreButtonWidth);
+            ImageButton moreButton = CreateIconButton(CollectionListImageKeys.ListMore, "list_more.svg", "Больше типов сообщений", moreButtonWidth);
             moreButton.Clicked += (_, _) => ShowPopup(PopupKind.Types);
+
             TypeRowTwo.Children.Add(moreButton);
+
             TypeRowTwo.IsVisible = true;
         }
         else
@@ -341,19 +382,21 @@ public partial class MessageListView : MessageListViewBase
         bool allSelected = AreAllTypesSelected();
 
         MessageTypeActionButtonView button = new();
-        button.Configure(
-            GetIcon(MessageAgentImageKeys.AllMessageTypes, "all_message_types.svg"),
-            "Все типы сообщений",
-            allSelected);
+
+        button.Configure(GetIcon(MessageAgentImageKeys.AllMessageTypes, "all_message_types.svg"), "Все типы сообщений", allSelected);
+
         button.Clicked += (_, _) => ToggleAllTypes();
+
         return button;
     }
 
     private View CreateTypeChip(MessageType type, int count, bool selected, bool fullWidth = false)
     {
         MessageTypeChipView chip = new();
+
         chip.Configure(type, count, selected, fullWidth ? -1 : EstimateTypeChipWidth(type));
         chip.Selected += (_, _) => ToggleType(type.Name);
+
         return chip;
     }
 
@@ -391,13 +434,17 @@ public partial class MessageListView : MessageListViewBase
         if (ItemsSource?.Contains(message) == true) ItemsSource.Remove(message);
     }
 
-    /// <summary>Recalculates the message-type chip layout when the available header width changes.</summary>
+    /// <summary>
+    /// Recalculates the message-type chip layout when the available header width changes.
+    /// </summary>
     protected override void OnAdditionalHeaderSizeChanged()
     {
         if (Math.Abs(TypeRowsHost.Width - lastRenderedTypeWidth) > 1) RenderTypeFilters();
     }
 
-    /// <summary>Populates the overflow popup with the available message types.</summary>
+    /// <summary>
+    /// Populates the overflow popup with the available message types.
+    /// </summary>
     protected override void OnBuildTypesContext()
     {
         if (availableTypes.Count == 0)
@@ -411,7 +458,9 @@ public partial class MessageListView : MessageListViewBase
             PopupContent.Children.Add(CreateTypeChip(type, count, selectedTypeNames.Contains(type.Name), fullWidth: true));
     }
 
-    /// <summary>Adds the status-text filter section to the shared filtering popup.</summary>
+    /// <summary>
+    /// Adds the status-text filter section to the shared filtering popup.
+    /// </summary>
     protected override void OnAppendAdditionalFilterOptions()
     {
         AddCollapsibleSection("Статусы", section =>
@@ -441,7 +490,9 @@ public partial class MessageListView : MessageListViewBase
         isAvailable: () => HasMessagesWithStatuses() || !string.IsNullOrWhiteSpace(statusFilterText));
     }
 
-    /// <summary>Resets the message-type and status-text filters maintained by this control.</summary>
+    /// <summary>
+    /// Resets the message-type and status-text filters maintained by this control.
+    /// </summary>
     protected override void ClearAdditionalFilterState()
     {
         typeFilterRule = null;
@@ -455,11 +506,16 @@ public partial class MessageListView : MessageListViewBase
         RenderTypeFilters();
     }
 
-    /// <summary>Shows the message-type filter row only when the collection contains messages and available types.</summary>
+    /// <summary>
+    /// Shows the message-type filter row only when the collection contains messages and available types.
+    /// </summary>
     /// <param name="hasItems">Indicates whether the source collection contains items.</param>
     protected override void OnAdditionalControlsAvailabilityChanged(bool hasItems)
         => TypeFiltersBorder.IsVisible = hasItems && availableTypes.Count > 0;
-    /// <summary>Determines whether the specified message search field can currently be used.</summary>
+
+    /// <summary>
+    /// Determines whether the specified message search field can currently be used.
+    /// </summary>
     /// <param name="parameter">The search field to check.</param>
     /// <returns><see langword="true"/> when the field is available for the current collection.</returns>
     protected override bool IsSearchParameterAvailable(MessageSearchParametr parameter)
@@ -476,7 +532,9 @@ public partial class MessageListView : MessageListViewBase
         };
     }
 
-    /// <summary>Determines whether the specified message sort field can currently be used.</summary>
+    /// <summary>
+    /// Determines whether the specified message sort field can currently be used.
+    /// </summary>
     /// <param name="parameter">The sort field to check.</param>
     /// <returns><see langword="true"/> when the field is available for the current collection.</returns>
     protected override bool IsSortParameterAvailable(MessageSortParametr parameter)
@@ -492,7 +550,9 @@ public partial class MessageListView : MessageListViewBase
         };
     }
 
-    /// <summary>Determines whether the specified message filter can currently be used.</summary>
+    /// <summary>
+    /// Determines whether the specified message filter can currently be used.
+    /// </summary>
     /// <param name="parameter">The filter field to check.</param>
     /// <returns><see langword="true"/> when the filter is available for the current collection.</returns>
     protected override bool IsFilterParameterAvailable(MessageFilterParametr parameter)
@@ -517,7 +577,9 @@ public partial class MessageListView : MessageListViewBase
         UpdateAppliedIndicators();
     }
 
-    /// <summary>Creates the message provider used to render an individual collection item.</summary>
+    /// <summary>
+    /// Creates the message provider used to render an individual collection item.
+    /// </summary>
     /// <param name="message">The message to display.</param>
     /// <returns>A provider configured to render the specified message.</returns>
     protected override MessageProvider CreateItemView(Message message) => new MessageProvider
@@ -529,7 +591,9 @@ public partial class MessageListView : MessageListViewBase
         MinimumHeightRequest = 36
     };
 
-    /// <summary>Wraps a rendered message with desktop delete controls and a swipe-to-delete action.</summary>
+    /// <summary>
+    /// Wraps a rendered message with desktop delete controls and a swipe-to-delete action.
+    /// </summary>
     /// <param name="message">The message associated with the rendered view.</param>
     /// <param name="itemView">The view that renders the message.</param>
     /// <returns>The container that hosts the message view and its delete actions.</returns>
@@ -537,8 +601,7 @@ public partial class MessageListView : MessageListViewBase
     {
         bool isMobile = DeviceInfo.Platform == DevicePlatform.Android || DeviceInfo.Platform == DevicePlatform.iOS;
 
-        ImageButton deleteButton = CreateIconButton(
-            CollectionListImageKeys.ListDelete, "list_delete.svg", "Удалить сообщение", 32);
+        ImageButton deleteButton = CreateIconButton(CollectionListImageKeys.ListDelete, "list_delete.svg", "Удалить сообщение", 32);
         deleteButton.Opacity = 0.82;
         deleteButton.IsVisible = !isMobile;
         deleteButton.Clicked += (_, _) => DeleteMessage(message);
