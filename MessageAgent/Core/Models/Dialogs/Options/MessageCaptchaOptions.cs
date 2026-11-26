@@ -13,6 +13,11 @@ namespace MessageAgent.Core.Models.Dialogs.Options
 
         public int TextLength { get; set; } = 6;
 
+        /// <summary>
+        /// Visual distortion strength of the generated text CAPTCHA.
+        /// </summary>
+        public MessageCaptchaDistortionLevel DistortionLevel { get; set; } = MessageCaptchaDistortionLevel.Medium;
+
         public string Prompt { get; set; } = "Подтвердите, что вы не робот";
 
         public string VerifyText { get; set; } = "Проверить";

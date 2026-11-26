@@ -487,6 +487,17 @@ public partial class MessageProvider : ContentView
         {
             MessageDetailsPage detailsPage = detailsPageFactory.Create(Message);
 
+            // Opening the full details is itself a read action. Do not rely only on the
+            // notification animation: a user may open a list item before it ends.
+            if (!Message.IsRead)
+            {
+                Message.IsRead = true;
+                LottieProvider.IsPlaying = false;
+                LottieProvider.Progress = 1;
+            }
+
+            UpdatePresentation();
+
             await page.Navigation.PushModalAsync(detailsPage, animated: false);
         }
         finally

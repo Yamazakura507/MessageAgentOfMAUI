@@ -2,7 +2,16 @@
 <ContentView
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="MessageAgent.Controls.Provider.MessageInputView">
+    xmlns:resources="clr-namespace:MessageAgent.Resources"
+    x:Class="MessageAgent.Controls.Provider.MessageInputView"
+    x:Name="Root">
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <resources:DefaultResourceDictionary />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentView.Resources>
     <VerticalStackLayout Spacing="7">
         <Entry x:Name="SingleLineInput"
                Placeholder="Введите значение"
@@ -17,6 +26,6 @@
         <Label x:Name="ValidationLabel"
                IsVisible="False"
                FontSize="12"
-               TextColor="#C62828" />
+               TextColor="{Binding Source={x:Reference Root}, Path=., Converter={StaticResource MessageAgentColorConverter}, ConverterParameter=MessageAgent.Colors.ValidationError}" />
     </VerticalStackLayout>
 </ContentView>

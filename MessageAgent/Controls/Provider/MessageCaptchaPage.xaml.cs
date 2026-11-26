@@ -1,9 +1,17 @@
 using System.Security.Cryptography;
+using LottieAgent.Interfaces;
+using LottieAgent.Models;
 using MessageAgent.Controls.Provider.Abstract;
 using MessageAgent.Core.Enums.Dialog;
 using MessageAgent.Core.Models.Dialogs.Options;
 using MessageAgent.Core.Models.ExtentionKinds;
+using MessageAgent.Resources;
+using MessageAgent.Resources.ExtensionResources;
+using MessageAgent.Services;
 using MessageAgent.Services.Extensions;
+using MessageAgent.Services.Factory;
+using MessageAgent.Services.Interactions;
+using ResourcesLib.Models;
 using SkiaSharp;
 
 namespace MessageAgent.Controls.Provider;
@@ -15,6 +23,7 @@ public partial class MessageCaptchaPage : AnimatedModalPage
 {
     private readonly MessageCaptchaOptions options;
     private readonly TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly LottiePlaybackInteraction closeAnimationInteraction;
     private SKBitmap? sourceBitmap;
     private SKBitmap? backgroundBitmap;
     private SKBitmap? pieceBitmap;
@@ -30,6 +39,33 @@ public partial class MessageCaptchaPage : AnimatedModalPage
     private bool horizontalSliderReleased;
     private bool verticalSliderReleased;
     private string answer = string.Empty;
+    private TextGlyphTransform[] glyphTransforms = Array.Empty<TextGlyphTransform>();
+    private TextNoiseLine[] textNoiseLines = Array.Empty<TextNoiseLine>();
+    private TextNoiseDot[] textNoiseDots = Array.Empty<TextNoiseDot>();
+    private float textOverlapFactor = 1f;
+    private float textAdvanceGap = 5f;
+
+    private readonly record struct TextGlyphTransform(
+        float RotationDegrees,
+        float BaselineOffset,
+        float SkewX,
+        float VerticalScale);
+
+    private readonly record struct TextNoiseLine(
+        float StartX,
+        float StartY,
+        float EndX,
+        float EndY,
+        float StrokeWidth,
+        bool DrawOverText,
+        byte Alpha);
+
+    private readonly record struct TextNoiseDot(
+        float X,
+        float Y,
+        float Radius,
+        bool DrawOverText,
+        byte Alpha);
 
     private static readonly MessageCaptchaPosition[] Positions =
     {
@@ -48,26 +84,49 @@ public partial class MessageCaptchaPage : AnimatedModalPage
     };
 
     public string Prompt => options.Prompt;
+    public string DialogIconKey => MessageAgentImageKeys.Captcha;
+    public MessageType DialogType { get; }
+    public bool IsTextMode => options.Mode == MessageCaptchaMode.Text;
+    public bool IsImageMode => options.Mode == MessageCaptchaMode.Image;
+    public bool ShowVerifyButton => IsTextMode;
+    public string VerifyText => options.VerifyText;
+    public string CancelText => options.CancelText;
+    public bool ShowHorizontalSlider => activePosition is MessageCaptchaPosition.Horizontal or MessageCaptchaPosition.FullArea;
+    public bool ShowVerticalSlider => activePosition is MessageCaptchaPosition.Vertical or MessageCaptchaPosition.FullArea;
+    public string PuzzleModeText => $"{GetShapeName(activeShape)} · {GetPositionName(activePosition)}";
+    public ILottieJsonLoader JsonLoader { get; }
+    public ILottieModifierProcessor ModifierProcessor { get; }
     public Color AccentColor { get; }
-    public Color AccentContentColor { get; }
     public Color DialogSurface { get; }
     public Color ForegroundColor { get; }
-    public Color SecondaryColor { get; }
+    public SKColor CaptchaOutlineColor { get; }
+    public SKColor CaptchaOutlineShadowColor { get; }
     public Task<bool> Result => completion.Task;
 
     private MessageCaptchaPage(MessageCaptchaOptions options)
     {
         this.options = options ?? throw new ArgumentNullException(nameof(options));
 
-        MessageType palette = MessageType.Info;
+        DialogType = MessageType.Info;
+        AccentColor = DialogType.GetDialogAccent();
+        DialogSurface = DialogType.GetDialogSurface();
+        ForegroundColor = DialogType.GetDialogForeground();
+        CaptchaOutlineColor = ToSkColor(MessageAgentResources.GetColor(MessageAgentColorKeys.CaptchaOutline));
+        CaptchaOutlineShadowColor = ToSkColor(MessageAgentResources.GetColor(MessageAgentColorKeys.CaptchaOutlineShadow));
 
-        AccentColor = palette.GetDialogAccent();
-        AccentContentColor = palette.GetAccentContent();
-        DialogSurface = palette.GetDialogSurface();
-        ForegroundColor = palette.GetDialogForeground();
-        SecondaryColor = palette.GetDialogSecondaryForeground();
+        JsonLoader = MauiServiceProvider.GetRequiredService<ILottieJsonLoader>();
+        ModifierProcessor = MauiServiceProvider.GetRequiredService<ILottieModifierProcessor>();
 
         InitializeComponent();
+
+        LottieResourceSettings closeSettings = MessageAgentLottieSettingsFactory.GetCloseSettings(AccentColor);
+
+        MessageAgentLottieSettingsFactory.Apply(HeaderCloseAnimation, closeSettings);
+        closeAnimationInteraction = new LottiePlaybackInteraction(
+            HeaderCloseAnimation,
+            HeaderCloseButton,
+            closeSettings.RestingProgress!.Value,
+            resetToRestingOnDeactivate: true);
     }
 
     public static async ValueTask<MessageCaptchaPage> CreateAsync(MessageCaptchaOptions options)
@@ -83,16 +142,11 @@ public partial class MessageCaptchaPage : AnimatedModalPage
 
     private async ValueTask InitializeChallengeAsync()
     {
-        TextChallenge.IsVisible = options.Mode == MessageCaptchaMode.Text;
-        ImageChallenge.IsVisible = options.Mode == MessageCaptchaMode.Image;
-        VerifyButton.IsVisible = options.Mode == MessageCaptchaMode.Text;
-        VerifyButton.Text = options.VerifyText;
-        CancelButton.Text = options.CancelText;
-
         if (options.Mode == MessageCaptchaMode.Text)
         {
             answer = GenerateAnswer(options.SourceText, options.TextLength);
-            CaptchaCodeLabel.Text = string.Join(" ", answer.ToCharArray());
+            PrepareTextCaptchaArtwork();
+            CaptchaTextCanvas.InvalidateSurface();
 
             return;
         }
@@ -139,6 +193,169 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         return new string(result);
     }
 
+    private void PrepareTextCaptchaArtwork()
+    {
+        (int lineCount, int dotCount, float maxRotation, float maxOffset, float maxSkew,
+            float verticalScale, float overlapFactor, float advanceGap, float strokeWidth) = options.DistortionLevel switch
+        {
+            MessageCaptchaDistortionLevel.None => (0, 0, 0f, 0f, 0f, 0f, 1f, 7f, 0f),
+            MessageCaptchaDistortionLevel.Low => (1, 8, 4f, 2f, 0.05f, 0.04f, 0.98f, 5f, 1f),
+            MessageCaptchaDistortionLevel.Medium => (3, 18, 8f, 4f, 0.12f, 0.08f, 0.92f, 3f, 1.3f),
+            MessageCaptchaDistortionLevel.High => (6, 34, 14f, 7f, 0.22f, 0.14f, 0.84f, 1f, 1.7f),
+            _ => (10, 54, 20f, 11f, 0.34f, 0.22f, 0.74f, -1f, 2.1f)
+        };
+
+        static float RandomBetween(float minimum, float maximum)
+            => minimum + (float)Random.Shared.NextDouble() * (maximum - minimum);
+
+        textOverlapFactor = overlapFactor;
+        textAdvanceGap = advanceGap;
+
+        glyphTransforms = Enumerable.Range(0, answer.Length)
+            .Select(_ => new TextGlyphTransform(
+                RandomBetween(-maxRotation, maxRotation),
+                RandomBetween(-maxOffset, maxOffset),
+                RandomBetween(-maxSkew, maxSkew),
+                RandomBetween(1f - verticalScale, 1f + verticalScale)))
+            .ToArray();
+
+        textNoiseLines = Enumerable.Range(0, lineCount)
+            .Select(index => new TextNoiseLine(
+                RandomBetween(0f, 1f),
+                RandomBetween(0f, 1f),
+                RandomBetween(0f, 1f),
+                RandomBetween(0f, 1f),
+                RandomBetween(Math.Max(0.7f, strokeWidth * 0.65f), Math.Max(0.8f, strokeWidth * 1.35f)),
+                index % 3 == 0,
+                (byte)Random.Shared.Next(75, 165)))
+            .ToArray();
+
+        textNoiseDots = Enumerable.Range(0, dotCount)
+            .Select(index => new TextNoiseDot(
+                RandomBetween(0f, 1f),
+                RandomBetween(0f, 1f),
+                RandomBetween(0.8f, 2.2f + strokeWidth),
+                index % 4 == 0,
+                (byte)Random.Shared.Next(65, 155)))
+            .ToArray();
+    }
+
+    private void CaptchaTextCanvasOnPaintSurface(object? sender, SkiaSharp.Views.Maui.SKPaintSurfaceEventArgs e)
+    {
+        if (string.IsNullOrEmpty(answer)) return;
+
+        SKCanvas canvas = e.Surface.Canvas;
+        float canvasWidth = e.Info.Width;
+        float canvasHeight = e.Info.Height;
+
+        canvas.Clear(ToSkColor(DialogSurface));
+
+        DrawTextCaptchaArtifacts(canvas, canvasWidth, canvasHeight, drawOverText: false);
+
+        using SKFont textFont = new(SKTypeface.Default, Math.Clamp(canvasHeight * 0.62f, 22f, 60f))
+        {
+            Embolden = true,
+            Subpixel = true,
+            Edging = SKFontEdging.Antialias
+        };
+        using SKPaint textPaint = new()
+        {
+            Color = ToSkColor(AccentColor),
+            IsAntialias = true
+        };
+
+        float[] glyphWidths = answer.Select(character => textFont.MeasureText(character.ToString(), textPaint)).ToArray();
+        float maxTextWidth = Math.Max(40f, canvasWidth - 28f);
+
+        float CalculateTotalWidth()
+        {
+            float total = 0f;
+
+            for (int index = 0; index < glyphWidths.Length; index++)
+                total += glyphWidths[index] * textOverlapFactor + (index == glyphWidths.Length - 1 ? 0f : textAdvanceGap);
+
+            return total;
+        }
+
+        float totalWidth = CalculateTotalWidth();
+
+        if (totalWidth > maxTextWidth)
+        {
+            textFont.Size *= maxTextWidth / totalWidth;
+            for (int index = 0; index < answer.Length; index++)
+                glyphWidths[index] = textFont.MeasureText(answer[index].ToString(), textPaint);
+
+            totalWidth = CalculateTotalWidth();
+        }
+
+        float cursor = (canvasWidth - totalWidth) / 2f;
+        float normalBaseline = canvasHeight * 0.66f;
+
+        for (int index = 0; index < answer.Length; index++)
+        {
+            string glyph = answer[index].ToString();
+            TextGlyphTransform transform = glyphTransforms[index];
+            float glyphWidth = glyphWidths[index];
+
+            textFont.SkewX = transform.SkewX;
+
+            canvas.Save();
+            canvas.Translate(cursor + glyphWidth / 2f, normalBaseline + transform.BaselineOffset);
+            canvas.RotateDegrees(transform.RotationDegrees);
+            canvas.Scale(1f, transform.VerticalScale);
+            canvas.DrawText(glyph, -glyphWidth / 2f, 0f, SKTextAlign.Left, textFont, textPaint);
+            canvas.Restore();
+
+            cursor += glyphWidth * textOverlapFactor + textAdvanceGap;
+        }
+
+        DrawTextCaptchaArtifacts(canvas, canvasWidth, canvasHeight, drawOverText: true);
+    }
+
+    private void DrawTextCaptchaArtifacts(SKCanvas canvas, float width, float height, bool drawOverText)
+    {
+        SKColor accent = ToSkColor(AccentColor);
+        SKColor secondary = ToSkColor(ForegroundColor);
+
+        using SKPaint linePaint = new()
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+            IsAntialias = true
+        };
+
+        foreach (TextNoiseLine line in textNoiseLines)
+        {
+            if (line.DrawOverText != drawOverText) continue;
+
+            linePaint.Color = new SKColor(accent.Red, accent.Green, accent.Blue, line.Alpha);
+            linePaint.StrokeWidth = Math.Max(0.7f, line.StrokeWidth);
+            canvas.DrawLine(
+                line.StartX * width,
+                line.StartY * height,
+                line.EndX * width,
+                line.EndY * height,
+                linePaint);
+        }
+
+        using SKPaint dotPaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
+
+        foreach (TextNoiseDot dot in textNoiseDots)
+        {
+            if (dot.DrawOverText != drawOverText) continue;
+
+            dotPaint.Color = new SKColor(secondary.Red, secondary.Green, secondary.Blue, dot.Alpha);
+            canvas.DrawCircle(dot.X * width, dot.Y * height, dot.Radius, dotPaint);
+        }
+    }
+
+    private static SKColor ToSkColor(Color color)
+        => new(
+            (byte)Math.Clamp((int)Math.Round(color.Red * 255f), 0, 255),
+            (byte)Math.Clamp((int)Math.Round(color.Green * 255f), 0, 255),
+            (byte)Math.Clamp((int)Math.Round(color.Blue * 255f), 0, 255),
+            (byte)Math.Clamp((int)Math.Round(color.Alpha * 255f), 0, 255));
+
     private void BuildPuzzle()
     {
         if (sourceBitmap is null) return;
@@ -151,6 +368,9 @@ public partial class MessageCaptchaPage : AnimatedModalPage
             ? Enumerable.Range(0, Random.Shared.Next(6, 10)).Select(_ => (float)(Random.Shared.NextDouble() * 0.28 + 0.7)).ToArray()
             : Array.Empty<float>();
         activePosition = options.Position == MessageCaptchaPosition.Random ? PickRandomPosition() : options.Position;
+        OnPropertyChanged(nameof(ShowHorizontalSlider));
+        OnPropertyChanged(nameof(ShowVerticalSlider));
+        OnPropertyChanged(nameof(PuzzleModeText));
 
         int minDimension = Math.Min(sourceBitmap.Width, sourceBitmap.Height);
 
@@ -172,6 +392,7 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         {
             canvas.DrawBitmap(sourceBitmap, 0, 0, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear));
             canvas.DrawPath(targetPath, clearPaint);
+            DrawCaptchaOutline(canvas, targetPath);
         }
 
         pieceBitmap = new SKBitmap(new SKImageInfo(pieceWidth, pieceHeight, SKColorType.Rgba8888, SKAlphaType.Premul));
@@ -188,6 +409,7 @@ public partial class MessageCaptchaPage : AnimatedModalPage
                 new SKRect(0, 0, pieceWidth, pieceHeight),
                 new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear));
             pieceCanvas.Restore();
+            DrawCaptchaOutline(pieceCanvas, localPath);
         }
 
         candidateX = activePosition == MessageCaptchaPosition.Vertical ? targetX : PickStartPosition(targetX, maxX);
@@ -195,13 +417,35 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         horizontalSliderReleased = false;
         verticalSliderReleased = false;
         HorizontalSlider.Value = maxX == 0 ? 0 : candidateX / maxX * 100;
-        VerticalSlider.Value = maxY == 0 ? 0 : candidateY / maxY * 100;
-        HorizontalSliderRow.IsVisible = activePosition is MessageCaptchaPosition.Horizontal or MessageCaptchaPosition.FullArea;
-        VerticalSliderRow.IsVisible = activePosition is MessageCaptchaPosition.Vertical or MessageCaptchaPosition.FullArea;
-        PuzzleModeLabel.Text = $"{GetShapeName(activeShape)} · {GetPositionName(activePosition)}";
+        VerticalSlider.Value = maxY == 0 ? 0 : (1d - candidateY / maxY) * 100;
         FeedbackLabel.IsVisible = false;
 
         PuzzleCanvas.InvalidateSurface();
+    }
+
+    private void DrawCaptchaOutline(SKCanvas canvas, SKPath path)
+    {
+        using SKPaint shadowPaint = new()
+        {
+            Color = CaptchaOutlineShadowColor,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 4f,
+            StrokeJoin = SKStrokeJoin.Round,
+            StrokeCap = SKStrokeCap.Round,
+            IsAntialias = true
+        };
+        using SKPaint outlinePaint = new()
+        {
+            Color = CaptchaOutlineColor,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 1.5f,
+            StrokeJoin = SKStrokeJoin.Round,
+            StrokeCap = SKStrokeCap.Round,
+            IsAntialias = true
+        };
+
+        canvas.DrawPath(path, shadowPaint);
+        canvas.DrawPath(path, outlinePaint);
     }
 
     private static double PickStartPosition(int target, int maximum)
@@ -337,7 +581,7 @@ public partial class MessageCaptchaPage : AnimatedModalPage
     private void VerticalSliderOnValueChanged(object? sender, ValueChangedEventArgs e)
     {
         if (activePosition is MessageCaptchaPosition.Vertical or MessageCaptchaPosition.FullArea && sourceBitmap is not null)
-            candidateY = e.NewValue / 100d * Math.Max(0, sourceBitmap.Height - pieceHeight);
+            candidateY = (1d - e.NewValue / 100d) * Math.Max(0, sourceBitmap.Height - pieceHeight);
 
         PuzzleCanvas.InvalidateSurface();
     }
@@ -398,11 +642,12 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         CaptchaAnswerEntry.Text = string.Empty;
 
         answer = GenerateAnswer(options.SourceText, options.TextLength);
-
-        CaptchaCodeLabel.Text = string.Join(" ", answer.ToCharArray());
+        PrepareTextCaptchaArtwork();
+        CaptchaTextCanvas.InvalidateSurface();
     }
 
     private async void CancelButtonOnClicked(object? sender, EventArgs e) => await CompleteAsync(false);
+    private async void CloseButtonOnClicked(object? sender, TappedEventArgs e) => await CompleteAsync(false);
 
     private async ValueTask CompleteAsync(bool result)
     {
@@ -433,6 +678,7 @@ public partial class MessageCaptchaPage : AnimatedModalPage
 
     protected override void OnDisappearing()
     {
+        closeAnimationInteraction.Dispose();
         sourceBitmap?.Dispose();
         backgroundBitmap?.Dispose();
         pieceBitmap?.Dispose();

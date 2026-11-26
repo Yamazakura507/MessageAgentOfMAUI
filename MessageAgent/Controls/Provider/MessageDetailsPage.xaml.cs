@@ -3,13 +3,12 @@ using LottieAgent.Models;
 using MessageAgent.Controls.Provider.Abstract;
 using MessageAgent.Core.Models;
 using MessageAgent.Services.Extensions;
+using MessageAgent.Services.Factory;
 using MessageAgent.Services.Interactions;
 using MessageAgent.Services.Interfaces;
 using MessageAgent.Core.Enums.Link;
 using MessageAgent.Resources;
 using MessageAgent.Resources.ExtensionResources;
-using CollectionLib.Resources;
-using CollectionLib.Resources.ExtensionResources;
 using ResourcesLib.Models;
 using ResourcesLib.Resolvers;
 
@@ -42,13 +41,20 @@ public partial class MessageDetailsPage : AnimatedModalPage
     public Color DialogAccentColor { get; }
 
     /// <summary>
+    /// Gets whether the read-state badge is displayed. Provider-backed dialogs show it;
+    /// standalone message dialogs hide it because they do not participate in a notification lifecycle.
+    /// </summary>
+    public bool ShowReadState { get; }
+
+    /// <summary>
     /// Initializes the message details dialog and its rendering dependencies.
     /// </summary>
     public MessageDetailsPage(
         Message message,
         ILottieJsonLoader jsonLoader,
         ILottieModifierProcessor modifierProcessor,
-        IVisualValueViewFactory visualValueViewFactory)
+        IVisualValueViewFactory visualValueViewFactory,
+        bool showReadState = true)
     {
         ArgumentNullException.ThrowIfNull(message);
 
@@ -57,6 +63,7 @@ public partial class MessageDetailsPage : AnimatedModalPage
         this.visualValueViewFactory = visualValueViewFactory ?? throw new ArgumentNullException(nameof(visualValueViewFactory));
 
         DialogAccentColor = message.Type.GetDialogAccent();
+        ShowReadState = showReadState;
 
         LottieResourceSettings arrowSettings = LottieResourceResolver.GetSettings(
             MessageAgentLottieKeys.Arrow,
@@ -66,33 +73,18 @@ public partial class MessageDetailsPage : AnimatedModalPage
             defaultSpeed: 1.25d,
             mergeModifiers: MessageAgentLottieModifiers.Merge);
 
-        LottieResourceSettings closeSettings = LottieResourceResolver.GetSettings(
-            MessageAgentLottieKeys.Close,
-            defaultResources: CollectionListDefaultResourceDictionary.Instance,
-            defaultRestingProgress: 1d,
-            defaultModifiers: new LottieModifierCollection().SetColor("Fill", message.Type.GetAccentContent()),
-            applicationResourceKeys: new[] { CollectionListLottieKeys.Close, MessageAgentLottieKeys.Close },
-            defaultResourceKeys: new[] { CollectionListLottieKeys.Close },
-            mergeModifiers: MessageAgentLottieModifiers.Merge);
-
-        LottieResourceSettings headerCloseSettings = LottieResourceResolver.GetSettings(
-            MessageAgentLottieKeys.Close,
-            defaultResources: CollectionListDefaultResourceDictionary.Instance,
-            defaultRestingProgress: 1d,
-            defaultModifiers: new LottieModifierCollection().SetColor("Fill", DialogAccentColor),
-            applicationResourceKeys: new[] { CollectionListLottieKeys.Close, MessageAgentLottieKeys.Close },
-            defaultResourceKeys: new[] { CollectionListLottieKeys.Close },
-            mergeModifiers: MessageAgentLottieModifiers.Merge);
+        LottieResourceSettings closeSettings = MessageAgentLottieSettingsFactory.GetCloseSettings(message.Type.GetAccentContent());
+        LottieResourceSettings headerCloseSettings = MessageAgentLottieSettingsFactory.GetCloseSettings(DialogAccentColor);
 
         InitializeComponent();
         BindingContext = message;
 
-        ApplyLottieSettings(PreviousImageArrow, arrowSettings);
-        ApplyLottieSettings(NextImageArrow, arrowSettings);
+        MessageAgentLottieSettingsFactory.Apply(PreviousImageArrow, arrowSettings);
+        MessageAgentLottieSettingsFactory.Apply(NextImageArrow, arrowSettings);
         NextImageArrow.RotationY = 180;
 
-        ApplyLottieSettings(CloseAnimation, closeSettings);
-        ApplyLottieSettings(HeaderCloseAnimation, headerCloseSettings);
+        MessageAgentLottieSettingsFactory.Apply(CloseAnimation, closeSettings);
+        MessageAgentLottieSettingsFactory.Apply(HeaderCloseAnimation, headerCloseSettings);
 
         closeAnimationInteraction = new LottiePlaybackInteraction(
             CloseAnimation,
@@ -165,15 +157,6 @@ public partial class MessageDetailsPage : AnimatedModalPage
 
         if (!canGoPrevious) previousArrowInteraction.SetActive(false);
         if (!canGoNext) nextArrowInteraction.SetActive(false);
-    }
-
-    private static void ApplyLottieSettings(LottieAgent.Controls.LottieView animation, LottieResourceSettings settings)
-    {
-        animation.Source = settings.Source;
-        animation.Modifiers = settings.Modifiers as LottieModifierCollection ?? new LottieModifierCollection();
-        animation.Progress = settings.RestingProgress ?? 0d;
-        animation.Speed = settings.Speed ?? 1d;
-        animation.IsReversed = settings.IsReversed ?? false;
     }
 
     private void PreviousImageOnTapped(object? sender, TappedEventArgs e)

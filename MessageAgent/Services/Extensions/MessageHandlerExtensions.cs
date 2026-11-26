@@ -1,11 +1,8 @@
-using System.Diagnostics;
-using System.Text.RegularExpressions;
 using MessageAgent.Controls.Provider;
-using MessageAgent.Core.Enums.Link;
 using MessageAgent.Core.Models;
 using MessageAgent.Core.Models.Dialogs;
 using MessageAgent.Core.Models.Dialogs.Options;
-using MessageAgent.Core.Models.ExtentionKinds;
+using MessageAgent.Resources.ExtensionResources;
 using MessageAgent.Services.Interfaces;
 
 namespace MessageAgent.Services.Extensions;
@@ -24,7 +21,7 @@ public static class MessageHandlerExtensions
 
         IMessageDetailsPageFactory factory = MauiServiceProvider.GetRequiredService<IMessageDetailsPageFactory>();
 
-        return PushModalAsync(() => factory.Create(message), hostPage);
+        return PushModalAsync(() => factory.Create(message, showReadState: false), hostPage);
     }
 
     /// <summary>
@@ -35,10 +32,7 @@ public static class MessageHandlerExtensions
     /// <summary>
     /// Opens an input dialog and returns the validated value, or null on cancellation.
     /// </summary>
-    public static async ValueTask<string?> ShowInputAsync(
-        this Message message,
-        MessageInputOptions? options = null,
-        Page? hostPage = null)
+    public static async ValueTask<string?> ShowInputAsync(this Message message, MessageInputOptions? options = null, Page? hostPage = null)
     {
         ArgumentNullException.ThrowIfNull(message);
 
@@ -47,9 +41,10 @@ public static class MessageHandlerExtensions
         MessagePromptPage dialog = await PushModalAsync(() =>
         {
             input = new MessageInputView(options);
+
             return new MessagePromptPage(
                 message,
-                ImageSource.FromFile("message_input.svg"),
+                MessageAgentImageKeys.Input,
                 input,
                 acceptText: options.AcceptText ?? "Подтвердить",
                 cancelText: options.CancelText ?? "Отмена");
@@ -76,13 +71,13 @@ public static class MessageHandlerExtensions
         MessageQuestionView? choices = null;
         MessagePromptPage dialog = await PushModalAsync(() =>
         {
-            choices = new MessageQuestionView(buttons, message.Type.GetDialogAccent(), message.Type.GetAccentContent());
+            choices = new MessageQuestionView(buttons, message.Type);
 
-            return new MessagePromptPage(message, ImageSource.FromFile("message_question.svg"), choices, showFooter: false);
+            return new MessagePromptPage(message, MessageAgentImageKeys.Question, choices, showFooter: false);
         }, hostPage, page =>
-        {
-            choices!.ChoiceSelected += async (_, selected) => await page.CompleteAsync(selected.Value);
-        });
+                        {
+                            choices!.ChoiceSelected += async (_, selected) => await page.CompleteAsync(selected.Value);
+                        });
 
         return await dialog.Result as string;
     }
@@ -90,10 +85,7 @@ public static class MessageHandlerExtensions
     /// <summary>
     /// Alias for <see cref="AskAsync"/>.
     /// </summary>
-    public static ValueTask<string?> ShowQuestionAsync(
-        this Message message,
-        MessageQuestionOptions? options = null,
-        Page? hostPage = null) => message.AskAsync(options, hostPage);
+    public static ValueTask<string?> ShowQuestionAsync(this Message message, MessageQuestionOptions? options = null, Page? hostPage = null) => message.AskAsync(options, hostPage);
 
     private static async ValueTask<TPage> PushModalAsync<TPage>(
         Func<TPage> createDialog, Page? hostPage, Action<TPage>? configure = null) where TPage : Page

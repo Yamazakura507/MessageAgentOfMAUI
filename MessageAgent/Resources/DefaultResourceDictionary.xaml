@@ -10,6 +10,11 @@
     <x:String x:Key="MessageAgent.Images.Unread">message_unread.png</x:String>
     <x:String x:Key="MessageAgent.Images.Important">important.png</x:String>
     <x:String x:Key="MessageAgent.Images.AllMessageTypes">all_message_types.png</x:String>
+    <x:String x:Key="MessageAgent.Images.Input">message_input.png</x:String>
+    <x:String x:Key="MessageAgent.Images.Question">message_question.png</x:String>
+    <x:String x:Key="MessageAgent.Images.Captcha">message_captcha.png</x:String>
+    <x:String x:Key="MessageAgent.Images.CaptchaDragHorizontal">captcha_drag_horizontal.png</x:String>
+    <x:String x:Key="MessageAgent.Images.CaptchaDragVertical">captcha_drag_vertical.png</x:String>
 
     <resourceSettings:LottieResourceSettings
         x:Key="MessageAgent.Lotties.Arrow"
@@ -42,6 +47,7 @@
     <converters:ReadStateConverter x:Key="ReadStateConverter" />
     <converters:MessageAgentImageSourceConverter x:Key="MessageAgentImageSourceConverter" />
     <converters:MessageAgentLottieSourceConverter x:Key="MessageAgentLottieSourceConverter" />
+    <converters:MessageAgentColorConverter x:Key="MessageAgentColorConverter" />
     <converters:HasTextConverter x:Key="HasTextConverter" />
     <converters:CollectionCountConverter x:Key="HasItemsConverter" MinimumCount="1" />
     <converters:CollectionCountConverter x:Key="HasMultipleItemsConverter" MinimumCount="2" />
@@ -109,6 +115,13 @@
     <Color x:Key="MessageAgent.Colors.StatusDescriptionTextLight">#404040</Color>
     <Color x:Key="MessageAgent.Colors.StatusDescriptionTextDark">#DDDDDD</Color>
     <Color x:Key="MessageAgent.Colors.ImageIndicator">#D3D3D3</Color>
+
+    <!-- Dialog validation and CAPTCHA artwork. These keys can be replaced by applications. -->
+    <Color x:Key="MessageAgent.Colors.ValidationError">#C62828</Color>
+    <Color x:Key="MessageAgent.Colors.DestructiveAccent">#B3261E</Color>
+    <Color x:Key="MessageAgent.Colors.DestructiveForeground">#FFFFFF</Color>
+    <Color x:Key="MessageAgent.Colors.Captcha.OutlineShadow">#70000000</Color>
+    <Color x:Key="MessageAgent.Colors.Captcha.Outline">#CFFFFFFF</Color>
 
     <!-- Reusable component styles -->
     <Style x:Key="MessageAgent.Styles.MessageTypeChipBorder" TargetType="Border">

@@ -23,6 +23,26 @@ public static class MessageAgentImageKeys
     /// Resource key for the icon representing all message types.
     /// </summary>
     public const string AllMessageTypes = "MessageAgent.Images.AllMessageTypes";
+    /// <summary>
+    /// Resource key for the input-dialog icon.
+    /// </summary>
+    public const string Input = "MessageAgent.Images.Input";
+    /// <summary>
+    /// Resource key for the question-dialog icon.
+    /// </summary>
+    public const string Question = "MessageAgent.Images.Question";
+    /// <summary>
+    /// Resource key for the CAPTCHA dialog icon.
+    /// </summary>
+    public const string Captcha = "MessageAgent.Images.Captcha";
+    /// <summary>
+    /// Resource key for the horizontal image-CAPTCHA slider icon.
+    /// </summary>
+    public const string CaptchaDragHorizontal = "MessageAgent.Images.CaptchaDragHorizontal";
+    /// <summary>
+    /// Resource key for the vertical image-CAPTCHA slider icon.
+    /// </summary>
+    public const string CaptchaDragVertical = "MessageAgent.Images.CaptchaDragVertical";
 
     /// <summary>
     /// Legacy resource key for the shared list search icon. Prefer CollectionListImageKeys.ListSearch.

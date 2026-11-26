@@ -11,10 +11,13 @@ namespace MessageAgent.Services.Factory;
 public sealed class MessageDetailsPageFactory(IServiceProvider services) : IMessageDetailsPageFactory
 {
     /// <inheritdoc />
-    public MessageDetailsPage Create(Message message)
+    public MessageDetailsPage Create(Message message) => Create(message, showReadState: true);
+
+    /// <inheritdoc />
+    public MessageDetailsPage Create(Message message, bool showReadState)
     {
         ArgumentNullException.ThrowIfNull(message);
 
-        return ActivatorUtilities.CreateInstance<MessageDetailsPage>(services, message);
+        return ActivatorUtilities.CreateInstance<MessageDetailsPage>(services, message, showReadState);
     }
 }

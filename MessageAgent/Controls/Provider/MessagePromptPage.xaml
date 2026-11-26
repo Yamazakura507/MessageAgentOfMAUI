@@ -5,6 +5,7 @@
     xmlns:modal="clr-namespace:MessageAgent.Controls.Provider.Abstract"
     xmlns:resources="clr-namespace:MessageAgent.Resources"
     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
+    xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
     x:Class="MessageAgent.Controls.Provider.MessagePromptPage"
     x:Name="Root"
     BackgroundColor="Transparent"
@@ -35,7 +36,7 @@
                 <VerticalStackLayout Spacing="16">
                     <Grid ColumnDefinitions="52,*,32" ColumnSpacing="12">
                         <Image Grid.Column="0"
-                               Source="{Binding Source={x:Reference Root}, Path=DialogIcon}"
+                               Source="{Binding Source={x:Reference Root}, Path=DialogIconKey, Converter={StaticResource MessageAgentImageSourceConverter}}"
                                WidthRequest="44" HeightRequest="44"
                                Aspect="AspectFit"
                                VerticalOptions="Center" />
@@ -48,23 +49,40 @@
                                    TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=SecondaryForeground}"
                                    IsVisible="{Binding Description, Converter={StaticResource HasTextConverter}}" />
                         </VerticalStackLayout>
-                        <Button x:Name="HeaderCloseButton"
+                        <Border x:Name="HeaderCloseButton"
                                 Grid.Column="2"
-                                Text="×"
-                                FontSize="23"
-                                Padding="0"
-                                WidthRequest="32"
-                                HeightRequest="32"
-                                CornerRadius="16"
+                                WidthRequest="30"
+                                HeightRequest="30"
+                                Padding="2"
                                 BackgroundColor="Transparent"
-                                TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Foreground}"
-                                Clicked="CloseButtonOnClicked"
-                                VerticalOptions="Start" />
+                                StrokeThickness="0"
+                                HorizontalOptions="End"
+                                VerticalOptions="Start"
+                                ToolTipProperties.Text="Закрыть">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="CloseButtonOnClicked" />
+                            </Border.GestureRecognizers>
+                            <lottie:LottieView
+                                x:Name="HeaderCloseAnimation"
+                                WidthRequest="26"
+                                HeightRequest="26"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center"
+                                IsPlaying="False"
+                                IsLooping="False"
+                                BackgroundColor="Transparent"
+                                Source="{Binding ., Converter={StaticResource MessageAgentLottieSourceConverter}, ConverterParameter=MessageAgent.Lotties.Close}"
+                                JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
+                                ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}" />
+                        </Border>
                     </Grid>
                     <ContentView x:Name="PromptContent" />
-                    <Grid x:Name="FooterButtons" ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <Grid x:Name="FooterButtons"
+                          IsVisible="{Binding Source={x:Reference Root}, Path=ShowFooter}"
+                          ColumnDefinitions="*,*"
+                          ColumnSpacing="10">
                         <Button x:Name="CancelActionButton"
-                                Text="Отмена"
+                                Text="{Binding Source={x:Reference Root}, Path=CancelText}"
                                 Clicked="CancelButtonOnClicked"
                                 BackgroundColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Surface}"
                                 BorderColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
@@ -72,7 +90,7 @@
                                 TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}" />
                         <Button x:Name="AcceptActionButton"
                                 Grid.Column="1"
-                                Text="Подтвердить"
+                                Text="{Binding Source={x:Reference Root}, Path=AcceptText}"
                                 
                                 BackgroundColor="{Binding Type, Converter={StaticResource MessageTypeColorConverter}}"
                                 TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=AccentContent}" />

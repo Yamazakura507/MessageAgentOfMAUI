@@ -14,4 +14,10 @@ public interface IMessageDetailsPageFactory
     /// <param name="message">The message to display.</param>
     /// <returns>A configured details page.</returns>
     MessageDetailsPage Create(Message message);
+
+    /// <summary>
+    /// Creates a details page and controls whether its read-state badge is visible.
+    /// The default implementation preserves compatibility with existing custom factories.
+    /// </summary>
+    MessageDetailsPage Create(Message message, bool showReadState) => Create(message);
 }

@@ -54,26 +54,31 @@
                             ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}"
                             Modifiers="{Binding Type, Converter={StaticResource LottieModifiersConverter}}" />
                         <Grid Grid.Column="1" RowDefinitions="Auto,Auto" RowSpacing="3" VerticalOptions="Center">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                                 <Label
                                     Text="{Binding Type, Converter={StaticResource MessageTypeToTextConverter}}"
                                     TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
                                     Style="{StaticResource MessageAgent.Styles.DialogTypeLabel}" />
-                                <HorizontalStackLayout Grid.Column="1" Spacing="5" VerticalOptions="Center">
+                                <HorizontalStackLayout
+                                    Grid.Column="1"
+                                    Spacing="5"
+                                    VerticalOptions="Center"
+                                    IsVisible="{Binding Source={x:Reference Root}, Path=ShowReadState}">
                                     <Image
                                         Source="{Binding IsRead, Converter={StaticResource ReadStateConverter}, ConverterParameter=Image}"
                                         WidthRequest="16" HeightRequest="16" Aspect="AspectFit" />
-                                    <Image
-                                        Source="{Binding IsImportant, Converter={StaticResource MessageAgentImageSourceConverter}, ConverterParameter=MessageAgent.Images.Important}"
-                                        WidthRequest="16" HeightRequest="16"
-                                        Aspect="AspectFit"
-                                        IsVisible="{Binding IsImportant}"
-                                        ToolTipProperties.Text="Важное сообщение" />
                                     <Label
                                         Text="{Binding IsRead, Converter={StaticResource ReadStateConverter}}"
                                         Style="{StaticResource MessageAgent.Styles.DialogSecondaryLabel}"
                                         TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=SecondaryForeground}" />
                                 </HorizontalStackLayout>
+                                <Image
+                                    Grid.Column="2"
+                                    Source="{Binding IsImportant, Converter={StaticResource MessageAgentImageSourceConverter}, ConverterParameter=MessageAgent.Images.Important}"
+                                    WidthRequest="16" HeightRequest="16"
+                                    Aspect="AspectFit"
+                                    IsVisible="{Binding IsImportant}"
+                                    ToolTipProperties.Text="Важное сообщение" />
                             </Grid>
                             <Label
                                 Grid.Row="1"

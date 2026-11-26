@@ -6,6 +6,7 @@
     xmlns:resources="clr-namespace:MessageAgent.Resources"
     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
     xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
+    xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
     x:Class="MessageAgent.Controls.Provider.MessageCaptchaPage"
     x:Name="Root"
     BackgroundColor="Transparent"
@@ -24,8 +25,8 @@
                 MaximumHeightRequest="760"
                 HorizontalOptions="Center"
                 VerticalOptions="Center"
-                BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogSurface}"
-                Stroke="{Binding Source={x:Reference Root}, Path=AccentColor}"
+                BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Surface}"
+                Stroke="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
                 StrokeThickness="1.5"
                 Opacity="0"
                 Scale="0.94">
@@ -35,7 +36,8 @@
             <ScrollView>
                 <VerticalStackLayout Spacing="14">
                     <Grid ColumnDefinitions="48,*,32" ColumnSpacing="12">
-                        <Image Source="message_captcha.svg"
+                        <Image Grid.Column="0"
+                               Source="{Binding Source={x:Reference Root}, Path=DialogIconKey, Converter={StaticResource MessageAgentImageSourceConverter}}"
                                WidthRequest="42" HeightRequest="42"
                                Aspect="AspectFit"
                                VerticalOptions="Center" />
@@ -43,38 +45,53 @@
                             <Label Text="Проверка CAPTCHA"
                                    FontSize="19"
                                    FontAttributes="Bold"
-                                   TextColor="{Binding Source={x:Reference Root}, Path=ForegroundColor}" />
+                                   TextColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}" />
                             <Label Text="{Binding Source={x:Reference Root}, Path=Prompt}"
                                    FontSize="13"
-                                   TextColor="{Binding Source={x:Reference Root}, Path=SecondaryColor}" />
+                                   TextColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=SecondaryForeground}" />
                         </VerticalStackLayout>
-                        <Button Grid.Column="2"
-                                Text="×"
-                                FontSize="23"
-                                Padding="0"
-                                WidthRequest="32"
-                                HeightRequest="32"
-                                CornerRadius="16"
+                        <Border x:Name="HeaderCloseButton"
+                                Grid.Column="2"
+                                WidthRequest="30"
+                                HeightRequest="30"
+                                Padding="2"
                                 BackgroundColor="Transparent"
-                                TextColor="{Binding Source={x:Reference Root}, Path=ForegroundColor}"
-                                Clicked="CancelButtonOnClicked"
-                                VerticalOptions="Start" />
+                                StrokeThickness="0"
+                                HorizontalOptions="End"
+                                VerticalOptions="Start"
+                                ToolTipProperties.Text="Закрыть">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="CloseButtonOnClicked" />
+                            </Border.GestureRecognizers>
+                            <lottie:LottieView
+                                x:Name="HeaderCloseAnimation"
+                                WidthRequest="26"
+                                HeightRequest="26"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center"
+                                IsPlaying="False"
+                                IsLooping="False"
+                                BackgroundColor="Transparent"
+                                Source="{Binding ., Converter={StaticResource MessageAgentLottieSourceConverter}, ConverterParameter=MessageAgent.Lotties.Close}"
+                                JsonLoader="{Binding JsonLoader, Source={x:Reference Root}}"
+                                ModifierProcessor="{Binding ModifierProcessor, Source={x:Reference Root}}" />
+                        </Border>
                     </Grid>
 
-                    <VerticalStackLayout x:Name="TextChallenge" Spacing="10">
+                    <VerticalStackLayout x:Name="TextChallenge"
+                                         IsVisible="{Binding Source={x:Reference Root}, Path=IsTextMode}"
+                                         Spacing="10">
                         <Border Padding="14"
-                                BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogSurface}"
-                                Stroke="{Binding Source={x:Reference Root}, Path=AccentColor}"
+                                BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Surface}"
+                                Stroke="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
                                 StrokeThickness="1.2">
                             <Border.StrokeShape>
                                 <shapes:RoundRectangle CornerRadius="12" />
                             </Border.StrokeShape>
-                            <Label x:Name="CaptchaCodeLabel"
-                                   FontSize="27"
-                                   FontAttributes="Bold"
-                                   CharacterSpacing="7"
-                                   HorizontalTextAlignment="Center"
-                                   TextColor="{Binding Source={x:Reference Root}, Path=AccentColor}" />
+                            <skia:SKCanvasView x:Name="CaptchaTextCanvas"
+                                               HeightRequest="86"
+                                               HorizontalOptions="Fill"
+                                               PaintSurface="CaptchaTextCanvasOnPaintSurface" />
                         </Border>
                         <Entry x:Name="CaptchaAnswerEntry"
                                Placeholder="Введите символы с изображения"
@@ -82,10 +99,42 @@
                                ReturnType="Done" />
                     </VerticalStackLayout>
 
-                    <VerticalStackLayout x:Name="ImageChallenge" IsVisible="False" Spacing="10">
-                        <Border Padding="6"
-                                BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogSurface}"
-                                Stroke="{Binding Source={x:Reference Root}, Path=AccentColor}"
+                    <Grid x:Name="ImageChallenge"
+                          IsVisible="{Binding Source={x:Reference Root}, Path=IsImageMode}"
+                          ColumnDefinitions="Auto,*"
+                          RowDefinitions="Auto,Auto,Auto,Auto"
+                          ColumnSpacing="8"
+                          RowSpacing="8">
+                        <AbsoluteLayout x:Name="VerticalSliderRow"
+                                        Grid.Row="0"
+                                        Grid.RowSpan="1"
+                                        WidthRequest="44"
+                                        HeightRequest="260"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center"
+                                        IsVisible="{Binding Source={x:Reference Root}, Path=ShowVerticalSlider}">
+                            <Image Source="{Binding Source={x:Reference Root}, Path=., Converter={StaticResource MessageAgentImageSourceConverter}, ConverterParameter=MessageAgent.Images.CaptchaDragVertical}"
+                                   WidthRequest="22"
+                                   HeightRequest="22"
+                                   Aspect="AspectFit"
+                                   AbsoluteLayout.LayoutBounds="0.25,0.02,35,0"
+                                   AbsoluteLayout.LayoutFlags="PositionProportional" />
+                            <Slider x:Name="VerticalSlider"
+                                    Rotation="270"
+                                    WidthRequest="210"
+                                    HeightRequest="36"
+                                    Minimum="0"
+                                    Maximum="100"
+                                    ValueChanged="VerticalSliderOnValueChanged"
+                                    DragCompleted="SliderOnDragCompleted"
+                                    AbsoluteLayout.LayoutBounds="-83,112,210,36" />
+                        </AbsoluteLayout>
+
+                        <Border Grid.Column="1"
+                                Grid.Row="0"
+                                Padding="6"
+                                BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Surface}"
+                                Stroke="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
                                 StrokeThickness="1.2">
                             <Border.StrokeShape>
                                 <shapes:RoundRectangle CornerRadius="12" />
@@ -95,65 +144,60 @@
                                                HorizontalOptions="Fill"
                                                PaintSurface="PuzzleCanvasOnPaintSurface" />
                         </Border>
-                        <Label Text="Переместите фрагмент в пустую область. Проверка выполняется после отпускания ползунка."
+
+                        <Label Grid.Column="1"
+                               Grid.Row="1"
+                               Text="Переместите фрагмент в пустую область. Проверка выполняется после отпускания ползунка."
                                FontSize="12"
-                               TextColor="{Binding Source={x:Reference Root}, Path=SecondaryColor}" />
-                        <Grid x:Name="HorizontalSliderRow" ColumnDefinitions="28,*" ColumnSpacing="8">
-                            <Image Source="captcha_drag_horizontal.svg"
-                                   WidthRequest="22" HeightRequest="22"
+                               TextColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=SecondaryForeground}" />
+
+                        <Grid x:Name="HorizontalSliderRow"
+                              IsVisible="{Binding Source={x:Reference Root}, Path=ShowHorizontalSlider}"
+                              Grid.Row="2"
+                              Grid.ColumnSpan="2"
+                              ColumnDefinitions="28,*"
+                              ColumnSpacing="8">
+                            <Image Source="{Binding Source={x:Reference Root}, Path=., Converter={StaticResource MessageAgentImageSourceConverter}, ConverterParameter=MessageAgent.Images.CaptchaDragHorizontal}"
+                                   WidthRequest="22"
+                                   HeightRequest="22"
                                    Aspect="AspectFit"
                                    VerticalOptions="Center" />
                             <Slider x:Name="HorizontalSlider"
                                     Grid.Column="1"
-                                    Minimum="0" Maximum="100"
+                                    Minimum="0"
+                                    Maximum="100"
                                     ValueChanged="HorizontalSliderOnValueChanged"
                                     DragCompleted="SliderOnDragCompleted" />
                         </Grid>
-                        <Grid x:Name="VerticalSliderRow"
-                              HeightRequest="180"
-                              ColumnDefinitions="28,44"
-                              ColumnSpacing="8"
-                              HorizontalOptions="Center"
-                              IsVisible="False">
-                            <Image Source="captcha_drag_vertical.svg"
-                                   WidthRequest="22" HeightRequest="22"
-                                   Aspect="AspectFit"
-                                   VerticalOptions="Center" />
-                            <Slider x:Name="VerticalSlider"
-                                    Grid.Column="1"
-                                    Rotation="270"
-                                    WidthRequest="150"
-                                    HeightRequest="36"
-                                    HorizontalOptions="Center"
-                                    VerticalOptions="Center"
-                                    Minimum="0" Maximum="100"
-                                    ValueChanged="VerticalSliderOnValueChanged"
-                                    DragCompleted="SliderOnDragCompleted" />
-                        </Grid>
+
                         <Label x:Name="PuzzleModeLabel"
+                               Text="{Binding Source={x:Reference Root}, Path=PuzzleModeText}"
+                               Grid.Row="3"
+                               Grid.ColumnSpan="2"
                                FontSize="11"
                                HorizontalTextAlignment="Center"
-                               TextColor="{Binding Source={x:Reference Root}, Path=SecondaryColor}" />
-                    </VerticalStackLayout>
+                               TextColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=SecondaryForeground}" />
+                    </Grid>
 
                     <Label x:Name="FeedbackLabel"
                            FontSize="12"
                            IsVisible="False"
-                           TextColor="{Binding Source={x:Reference Root}, Path=AccentColor}" />
+                           TextColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                         <Button x:Name="CancelButton"
-                                Text="Отмена"
+                                Text="{Binding Source={x:Reference Root}, Path=CancelText}"
                                 Clicked="CancelButtonOnClicked"
-                                BackgroundColor="Transparent"
-                                BorderColor="{Binding Source={x:Reference Root}, Path=AccentColor}"
+                                BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Surface}"
+                                BorderColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}"
                                 BorderWidth="1"
-                                TextColor="{Binding Source={x:Reference Root}, Path=AccentColor}" />
+                                TextColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}" />
                         <Button x:Name="VerifyButton"
                                 Grid.Column="1"
-                                Text="Проверить"
+                                IsVisible="{Binding Source={x:Reference Root}, Path=ShowVerifyButton}"
+                                Text="{Binding Source={x:Reference Root}, Path=VerifyText}"
                                 Clicked="VerifyButtonOnClicked"
-                                BackgroundColor="{Binding Source={x:Reference Root}, Path=AccentColor}"
-                                TextColor="{Binding Source={x:Reference Root}, Path=AccentContentColor}" />
+                                BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource MessageTypeColorConverter}}"
+                                TextColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=AccentContent}" />
                     </Grid>
                 </VerticalStackLayout>
             </ScrollView>

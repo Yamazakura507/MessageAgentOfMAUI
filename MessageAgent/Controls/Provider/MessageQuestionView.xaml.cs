@@ -1,4 +1,5 @@
 using MessageAgent.Core.Models.Dialogs;
+using MessageAgent.Core.Models.ExtentionKinds;
 
 namespace MessageAgent.Controls.Provider;
 
@@ -8,18 +9,13 @@ namespace MessageAgent.Controls.Provider;
 public partial class MessageQuestionView : ContentView
 {
     public IReadOnlyList<MessageQuestionButton> Buttons { get; }
-    public Color AccentColor { get; }
-    public Color AccentContentColor { get; }
+    public MessageType Type { get; }
     public event EventHandler<MessageQuestionButton>? ChoiceSelected;
 
-    public MessageQuestionView(
-        IReadOnlyList<MessageQuestionButton> buttons,
-        Color accentColor,
-        Color accentContentColor)
+    public MessageQuestionView(IReadOnlyList<MessageQuestionButton> buttons, MessageType type)
     {
         Buttons = buttons ?? throw new ArgumentNullException(nameof(buttons));
-        AccentColor = accentColor;
-        AccentContentColor = accentContentColor;
+        Type = type;
 
         InitializeComponent();
     }
