@@ -1,11 +1,10 @@
 using System.Security.Cryptography;
 using LottieAgent.Interfaces;
-using LottieAgent.Models;
 using MessageAgent.Controls.Provider.Abstract;
 using MessageAgent.Core.Enums.Dialog;
 using MessageAgent.Core.Models.Dialogs.Options;
+using MessageAgent.Core.Models.Dialogs.Structs;
 using MessageAgent.Core.Models.ExtentionKinds;
-using MessageAgent.Resources;
 using MessageAgent.Resources.ExtensionResources;
 using MessageAgent.Services;
 using MessageAgent.Services.Extensions;
@@ -45,28 +44,6 @@ public partial class MessageCaptchaPage : AnimatedModalPage
     private float textOverlapFactor = 1f;
     private float textAdvanceGap = 5f;
 
-    private readonly record struct TextGlyphTransform(
-        float RotationDegrees,
-        float BaselineOffset,
-        float SkewX,
-        float VerticalScale);
-
-    private readonly record struct TextNoiseLine(
-        float StartX,
-        float StartY,
-        float EndX,
-        float EndY,
-        float StrokeWidth,
-        bool DrawOverText,
-        byte Alpha);
-
-    private readonly record struct TextNoiseDot(
-        float X,
-        float Y,
-        float Radius,
-        bool DrawOverText,
-        byte Alpha);
-
     private static readonly MessageCaptchaPosition[] Positions =
     {
         MessageCaptchaPosition.Horizontal,
@@ -83,24 +60,81 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         MessageCaptchaShape.Custom
     };
 
+    /// <summary>
+    /// Gets the instruction text displayed above the CAPTCHA challenge.
+    /// </summary>
     public string Prompt => options.Prompt;
+    /// <summary>
+    /// Gets the resource key of the CAPTCHA dialog icon.
+    /// </summary>
     public string DialogIconKey => MessageAgentImageKeys.Captcha;
+    /// <summary>
+    /// Gets the message type used to resolve the dialog color palette.
+    /// </summary>
     public MessageType DialogType { get; }
+    /// <summary>
+    /// Gets a value indicating whether the text CAPTCHA layout is active.
+    /// </summary>
     public bool IsTextMode => options.Mode == MessageCaptchaMode.Text;
+    /// <summary>
+    /// Gets a value indicating whether the image-puzzle CAPTCHA layout is active.
+    /// </summary>
     public bool IsImageMode => options.Mode == MessageCaptchaMode.Image;
+    /// <summary>
+    /// Gets a value indicating whether the text verification button should be displayed.
+    /// </summary>
     public bool ShowVerifyButton => IsTextMode;
+    /// <summary>
+    /// Gets the caption of the verification button.
+    /// </summary>
     public string VerifyText => options.VerifyText;
+    /// <summary>
+    /// Gets the caption of the cancel button.
+    /// </summary>
     public string CancelText => options.CancelText;
+    /// <summary>
+    /// Gets a value indicating whether horizontal puzzle movement is enabled.
+    /// </summary>
     public bool ShowHorizontalSlider => activePosition is MessageCaptchaPosition.Horizontal or MessageCaptchaPosition.FullArea;
+    /// <summary>
+    /// Gets a value indicating whether vertical puzzle movement is enabled.
+    /// </summary>
     public bool ShowVerticalSlider => activePosition is MessageCaptchaPosition.Vertical or MessageCaptchaPosition.FullArea;
+    /// <summary>
+    /// Gets the localized description of the selected puzzle-piece shape and movement direction.
+    /// </summary>
     public string PuzzleModeText => $"{GetShapeName(activeShape)} · {GetPositionName(activePosition)}";
+    /// <summary>
+    /// Gets the service used to load the close-button Lottie animation.
+    /// </summary>
     public ILottieJsonLoader JsonLoader { get; }
+    /// <summary>
+    /// Gets the service used to process Lottie animation modifiers.
+    /// </summary>
     public ILottieModifierProcessor ModifierProcessor { get; }
+    /// <summary>
+    /// Gets the accent color used by the CAPTCHA dialog.
+    /// </summary>
     public Color AccentColor { get; }
+    /// <summary>
+    /// Gets the background color of the CAPTCHA dialog surface.
+    /// </summary>
     public Color DialogSurface { get; }
+    /// <summary>
+    /// Gets the foreground color used for secondary CAPTCHA artwork.
+    /// </summary>
     public Color ForegroundColor { get; }
+    /// <summary>
+    /// Gets the light outline color used to distinguish the puzzle piece and its target.
+    /// </summary>
     public SKColor CaptchaOutlineColor { get; }
+    /// <summary>
+    /// Gets the shadow color rendered beneath the puzzle-piece outline.
+    /// </summary>
     public SKColor CaptchaOutlineShadowColor { get; }
+    /// <summary>
+    /// Gets the asynchronous result of the challenge; <see langword="true"/> indicates successful verification.
+    /// </summary>
     public Task<bool> Result => completion.Task;
 
     private MessageCaptchaPage(MessageCaptchaOptions options)
@@ -122,6 +156,7 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         LottieResourceSettings closeSettings = MessageAgentLottieSettingsFactory.GetCloseSettings(AccentColor);
 
         MessageAgentLottieSettingsFactory.Apply(HeaderCloseAnimation, closeSettings);
+
         closeAnimationInteraction = new LottiePlaybackInteraction(
             HeaderCloseAnimation,
             HeaderCloseButton,
@@ -129,6 +164,12 @@ public partial class MessageCaptchaPage : AnimatedModalPage
             resetToRestingOnDeactivate: true);
     }
 
+    /// <summary>
+    /// Creates and initializes a CAPTCHA page using the supplied challenge options.
+    /// </summary>
+    /// <param name="options">The mode, content, and validation settings for the challenge.</param>
+    /// <returns>The initialized CAPTCHA page.</returns>
+    /// <exception cref="ArgumentNullException">The options argument is <see langword="null"/>.</exception>
     public static async ValueTask<MessageCaptchaPage> CreateAsync(MessageCaptchaOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -205,8 +246,7 @@ public partial class MessageCaptchaPage : AnimatedModalPage
             _ => (10, 54, 20f, 11f, 0.34f, 0.22f, 0.74f, -1f, 2.1f)
         };
 
-        static float RandomBetween(float minimum, float maximum)
-            => minimum + (float)Random.Shared.NextDouble() * (maximum - minimum);
+        static float RandomBetween(float minimum, float maximum) => minimum + (float)Random.Shared.NextDouble() * (maximum - minimum);
 
         textOverlapFactor = overlapFactor;
         textAdvanceGap = advanceGap;
@@ -282,6 +322,7 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         if (totalWidth > maxTextWidth)
         {
             textFont.Size *= maxTextWidth / totalWidth;
+
             for (int index = 0; index < answer.Length; index++)
                 glyphWidths[index] = textFont.MeasureText(answer[index].ToString(), textPaint);
 
@@ -345,16 +386,16 @@ public partial class MessageCaptchaPage : AnimatedModalPage
             if (dot.DrawOverText != drawOverText) continue;
 
             dotPaint.Color = new SKColor(secondary.Red, secondary.Green, secondary.Blue, dot.Alpha);
+
             canvas.DrawCircle(dot.X * width, dot.Y * height, dot.Radius, dotPaint);
         }
     }
 
-    private static SKColor ToSkColor(Color color)
-        => new(
-            (byte)Math.Clamp((int)Math.Round(color.Red * 255f), 0, 255),
-            (byte)Math.Clamp((int)Math.Round(color.Green * 255f), 0, 255),
-            (byte)Math.Clamp((int)Math.Round(color.Blue * 255f), 0, 255),
-            (byte)Math.Clamp((int)Math.Round(color.Alpha * 255f), 0, 255));
+    private static SKColor ToSkColor(Color color) => new(
+        (byte)Math.Clamp((int)Math.Round(color.Red * 255f), 0, 255),
+        (byte)Math.Clamp((int)Math.Round(color.Green * 255f), 0, 255),
+        (byte)Math.Clamp((int)Math.Round(color.Blue * 255f), 0, 255),
+        (byte)Math.Clamp((int)Math.Round(color.Alpha * 255f), 0, 255));
 
     private void BuildPuzzle()
     {
@@ -656,6 +697,10 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         await CloseAsync();
     }
 
+    /// <summary>
+    /// Completes the challenge as cancelled when the user navigates back.
+    /// </summary>
+    /// <returns><see langword="true"/> to indicate that the page handled the back action.</returns>
     protected override bool OnBackButtonPressed()
     {
         _ = CompleteAsync(false);
@@ -663,6 +708,9 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         return true;
     }
 
+    /// <summary>
+    /// Starts the entrance animation when the CAPTCHA page becomes visible.
+    /// </summary>
     protected override async void OnAppearing()
     {
         base.OnAppearing();
@@ -676,6 +724,9 @@ public partial class MessageCaptchaPage : AnimatedModalPage
             DialogPanel.ScaleToAsync(1, 230, Easing.CubicOut));
     }
 
+    /// <summary>
+    /// Releases the close-animation interaction and decoded CAPTCHA bitmaps when the page disappears.
+    /// </summary>
     protected override void OnDisappearing()
     {
         closeAnimationInteraction.Dispose();
@@ -686,6 +737,10 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         base.OnDisappearing();
     }
 
+    /// <summary>
+    /// Runs the exit animation for the CAPTCHA overlay and dialog panel.
+    /// </summary>
+    /// <returns>A task that completes when all exit animations finish.</returns>
     protected override Task AnimateOutAsync() => Task.WhenAll(
         Overlay.FadeToAsync(0, 130, Easing.CubicIn),
         DialogPanel.FadeToAsync(0, 130, Easing.CubicIn),

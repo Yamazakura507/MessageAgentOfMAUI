@@ -62,10 +62,9 @@ public abstract class MessageListViewBase : CollectionListView<
 
     private static string FormatGroupValue(GroupMessageParametrs parameter, object? value)
     {
-        if (parameter == GroupMessageParametrs.IsImportant)
-            return value is true ? "Важные" : "Обычные";
-        if (parameter == GroupMessageParametrs.IsRead)
-            return value is true ? "Прочитанные" : "Непрочитанные";
+        if (parameter == GroupMessageParametrs.IsImportant)  return value is true ? "Важные" : "Обычные";
+        if (parameter == GroupMessageParametrs.IsRead)  return value is true ? "Прочитанные" : "Непрочитанные";
+
         return value?.ToString() ?? "Не задано";
     }
 
@@ -92,6 +91,9 @@ public abstract class MessageListViewBase : CollectionListView<
         _ => parameter.ToString()
     };
 
+    /// <summary>
+    /// Gets the localized display name for a sorting algorithm.
+    /// </summary>
     protected override string GetSortKindDisplayName(SortKind kind) => kind switch
     {
         SortKind.Bubble => "Пузырьковая",
@@ -123,8 +125,10 @@ public abstract class MessageListViewBase : CollectionListView<
         _ => parameter.ToString()
     };
 
-    protected MessageListViewBase()
-        : base(
+    /// <summary>
+    /// Initializes the base list with the message-specific search, sort, filter, and grouping parameters.
+    /// </summary>
+    protected MessageListViewBase() : base(
             SearchParameters,
             SortParameters,
             BooleanFilterParameters,

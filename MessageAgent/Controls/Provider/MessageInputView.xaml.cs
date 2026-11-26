@@ -9,9 +9,17 @@ public partial class MessageInputView : ContentView
 {
     private readonly MessageInputOptions options;
 
+    /// <summary>
+    /// Initializes the input view and applies the supplied input and validation settings.
+    /// </summary>
+    /// <param name="options">The placeholder, keyboard, length, and validation configuration.</param>
+    /// <exception cref="ArgumentNullException">The options argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The configured minimum or maximum length is invalid.</exception>
+    /// <exception cref="ArgumentException">Password and multiline input are enabled together.</exception>
     public MessageInputView(MessageInputOptions options)
     {
         this.options = options ?? throw new ArgumentNullException(nameof(options));
+
         if (options.MaximumLength < 1 || options.MinimumLength < 0 || options.MinimumLength > options.MaximumLength)
             throw new ArgumentOutOfRangeException(nameof(options), "Проверьте ограничения длины ввода.");
         if (options.IsPassword && options.IsMultiline)
@@ -29,6 +37,11 @@ public partial class MessageInputView : ContentView
         MultiLineInput.MinimumHeightRequest = 110;
     }
 
+    /// <summary>
+    /// Reads the current input and validates it against the configured constraints.
+    /// </summary>
+    /// <param name="value">Receives the current input text, or an empty string when the field is empty.</param>
+    /// <returns><see langword="true"/> when validation succeeds; otherwise, <see langword="false"/>.</returns>
     public bool TryGetValue(out string value)
     {
         value = options.IsMultiline ? MultiLineInput.Text ?? string.Empty : SingleLineInput.Text ?? string.Empty;

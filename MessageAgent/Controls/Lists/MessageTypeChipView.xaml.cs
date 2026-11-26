@@ -4,12 +4,20 @@ using MessageAgent.Resources.ExtensionResources;
 
 namespace MessageAgent.Controls.Lists;
 
+/// <summary>Displays a selectable chip with a message type, its count, and its accent styling.</summary>
 public partial class MessageTypeChipView : ContentView
 {
+    /// <summary>Occurs when the message-type chip is selected.</summary>
     public event EventHandler? Selected;
 
+    /// <summary>Initializes the message-type chip.</summary>
     public MessageTypeChipView() => InitializeComponent();
 
+    /// <summary>Configures the displayed type, item count, selection appearance, and chip width.</summary>
+    /// <param name="type">The message type represented by the chip.</param>
+    /// <param name="count">The number of messages of this type.</param>
+    /// <param name="selected">Indicates whether this type is included in the active filter.</param>
+    /// <param name="width">The requested chip width; a negative value lets the chip fill its available width.</param>
     public void Configure(MessageType type, int count, bool selected, double width)
     {
         Color accent = type.AccentColor;
