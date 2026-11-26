@@ -30,4 +30,9 @@ public static class MessageAgentColorKeys
     /// Light inner stroke around the CAPTCHA movable piece and its target cut-out.
     /// </summary>
     public const string CaptchaOutline = "MessageAgent.Colors.Captcha.Outline";
+
+    /// <summary>
+    /// Loading animation accent and loading dialog primary color.
+    /// </summary>
+    public const string LoadingAccent = "MessageAgent.Colors.Loading.Accent";
 }

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<modal:AnimatedModalPage
+    x:Class="MessageAgent.Controls.Loading.LoadingDialogPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:modal="clr-namespace:MessageAgent.Controls.Provider.Abstract"
+    xmlns:loading="clr-namespace:MessageAgent.Controls.Loading"
+    xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
+    xmlns:resources="clr-namespace:MessageAgent.Resources"
+    x:Name="Root"
+    BackgroundColor="Transparent"
+    Title="Loading">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <resources:DefaultResourceDictionary />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid
+        x:Name="Overlay"
+        Padding="22"
+        BackgroundColor="{StaticResource MessageAgent.Colors.DetailsOverlay}"
+        Opacity="0">
+        <Border
+            x:Name="DialogPanel"
+            Padding="14"
+            MaximumWidthRequest="420"
+            MaximumHeightRequest="460"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            BackgroundColor="{Binding DialogSurfaceColor, Source={x:Reference Root}}"
+            Stroke="{Binding DialogAccentColor, Source={x:Reference Root}}"
+            StrokeThickness="1.5"
+            Opacity="0"
+            Scale="0.94">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="20" />
+            </Border.StrokeShape>
+
+            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                <Grid ColumnDefinitions="*,34" ColumnSpacing="8">
+                    <Label
+                        Text="Выполнение операции"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        TextColor="{Binding DialogForegroundColor, Source={x:Reference Root}}"
+                        VerticalOptions="Center" />
+
+                    <Border
+                        x:Name="CloseButton"
+                        Grid.Column="1"
+                        WidthRequest="32"
+                        HeightRequest="32"
+                        Padding="2"
+                        BackgroundColor="Transparent"
+                        StrokeThickness="0"
+                        HorizontalOptions="End"
+                        VerticalOptions="Center"
+                        ToolTipProperties.Text="Отменить и закрыть">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="CancelOnClicked" />
+                        </Border.GestureRecognizers>
+                        <lottie:LottieView
+                            x:Name="CloseAnimation"
+                            WidthRequest="28"
+                            HeightRequest="28"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"
+                            IsPlaying="False"
+                            IsLooping="False"
+                            BackgroundColor="Transparent" />
+                    </Border>
+                </Grid>
+
+                <loading:LoadingView
+                    x:Name="Loading"
+                    Grid.Row="1"
+                    HeightRequest="300"
+                    ShowBackdrop="False"
+                    ShowSurface="False"
+                    ShowStatus="True"
+                    HorizontalOptions="Fill"
+                    VerticalOptions="Fill" />
+
+                <Button
+                    x:Name="CancelButton"
+                    Grid.Row="2"
+                    Text="Отмена"
+                    HeightRequest="44"
+                    CornerRadius="12"
+                    BackgroundColor="{Binding DialogAccentColor, Source={x:Reference Root}}"
+                    TextColor="{Binding DialogForegroundOnAccent, Source={x:Reference Root}}"
+                    Clicked="CancelOnClicked" />
+            </Grid>
+        </Border>
+    </Grid>
+</modal:AnimatedModalPage>

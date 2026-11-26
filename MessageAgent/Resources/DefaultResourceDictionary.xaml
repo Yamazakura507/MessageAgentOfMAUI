@@ -38,6 +38,12 @@
         IsReversed="False" />
 
     <x:String x:Key="MessageAgent.Lotties.DefaultNotification">Lotties/circleLable.json</x:String>
+    <resourceSettings:LottieResourceSettings x:Key="MessageAgent.Lotties.Loading" Source="Lotties/loading.json" RestingProgress="0" Speed="1" IsReversed="False" />
+    <resourceSettings:LottieResourceSettings x:Key="MessageAgent.Lotties.Close" Source="Lotties/close.json" RestingProgress="0" Speed="1" IsReversed="False" />
+    <Color x:Key="MessageAgent.Colors.Loading.Accent">#2785D8</Color>
+    <Color x:Key="MessageAgent.Colors.LoadingOverlay">#99000000</Color>
+    <Color x:Key="MessageAgent.Colors.LoadingSurface">#FBFAF8</Color>
+    <Color x:Key="MessageAgent.Colors.LoadingForeground">#20242B</Color>
 
     <!-- Shared stateless converters -->
     <converters:MessageTypeColorConverter x:Key="MessageTypeColorConverter" />
