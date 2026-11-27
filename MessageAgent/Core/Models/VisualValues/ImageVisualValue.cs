@@ -1,4 +1,5 @@
 using MessageAgent.Core.Models.VisualValues.Abstract;
+using ResourcesLib.Resolvers;
 
 namespace MessageAgent.Core.Models.VisualValues;
 
@@ -37,10 +38,6 @@ public sealed record ImageVisualValue : VisualValue
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
 
-        string extension = Path.GetExtension(fileName);
-        string runtimeFileName = 
-            extension.Equals(".svg", StringComparison.OrdinalIgnoreCase) ? Path.ChangeExtension(fileName, ".png") : fileName;
-
-        return new ImageVisualValue(ImageSource.FromFile(runtimeFileName), alternativeText);
+        return new ImageVisualValue(ImageSource.FromFile(fileName.NormalizeImageFileName()), alternativeText);
     }
 }

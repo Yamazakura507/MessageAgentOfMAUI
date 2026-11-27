@@ -7,8 +7,10 @@
     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
     xmlns:skia="clr-namespace:SkiaSharp.Views.Maui.Controls;assembly=SkiaSharp.Views.Maui.Controls"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
+    xmlns:provider="clr-namespace:MessageAgent.Controls.Provider"
     x:Class="MessageAgent.Controls.Provider.MessageCaptchaPage"
     x:Name="Root"
+    x:DataType="provider:MessageCaptchaPage"
     BackgroundColor="Transparent"
     Title="CAPTCHA">
     <ContentPage.Resources>
@@ -94,6 +96,9 @@
                                                PaintSurface="CaptchaTextCanvasOnPaintSurface" />
                         </Border>
                         <Entry x:Name="CaptchaAnswerEntry"
+                               AutomationProperties.AutomationId="message-captcha-answer"
+                               SemanticProperties.Description="Ответ на CAPTCHA"
+                               SemanticProperties.Hint="Введите символы, показанные выше."
                                Placeholder="Введите символы с изображения"
                                MaxLength="24"
                                ReturnType="Done" />
@@ -120,6 +125,9 @@
                                    AbsoluteLayout.LayoutBounds="0.25,0.02,35,0"
                                    AbsoluteLayout.LayoutFlags="PositionProportional" />
                             <Slider x:Name="VerticalSlider"
+                                    AutomationProperties.AutomationId="message-captcha-vertical-slider"
+                                    SemanticProperties.Description="Вертикальное положение фрагмента"
+                                    SemanticProperties.Hint="Перемещайте фрагмент вверх или вниз."
                                     Rotation="270"
                                     WidthRequest="210"
                                     HeightRequest="36"
@@ -163,6 +171,9 @@
                                    Aspect="AspectFit"
                                    VerticalOptions="Center" />
                             <Slider x:Name="HorizontalSlider"
+                                    AutomationProperties.AutomationId="message-captcha-horizontal-slider"
+                                    SemanticProperties.Description="Горизонтальное положение фрагмента"
+                                    SemanticProperties.Hint="Перемещайте фрагмент влево или вправо."
                                     Grid.Column="1"
                                     Minimum="0"
                                     Maximum="100"
@@ -185,6 +196,8 @@
                            TextColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                         <Button x:Name="CancelButton"
+                                AutomationProperties.AutomationId="message-captcha-cancel"
+                                SemanticProperties.Description="{Binding Source={x:Reference Root}, Path=CancelText}"
                                 Text="{Binding Source={x:Reference Root}, Path=CancelText}"
                                 Clicked="CancelButtonOnClicked"
                                 BackgroundColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Surface}"
@@ -192,6 +205,8 @@
                                 BorderWidth="1"
                                 TextColor="{Binding Source={x:Reference Root}, Path=DialogType, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}" />
                         <Button x:Name="VerifyButton"
+                                AutomationProperties.AutomationId="message-captcha-verify"
+                                SemanticProperties.Description="{Binding Source={x:Reference Root}, Path=VerifyText}"
                                 Grid.Column="1"
                                 IsVisible="{Binding Source={x:Reference Root}, Path=ShowVerifyButton}"
                                 Text="{Binding Source={x:Reference Root}, Path=VerifyText}"

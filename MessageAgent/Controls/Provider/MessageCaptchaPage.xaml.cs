@@ -397,7 +397,7 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         (byte)Math.Clamp((int)Math.Round(color.Blue * 255f), 0, 255),
         (byte)Math.Clamp((int)Math.Round(color.Alpha * 255f), 0, 255));
 
-    private void BuildPuzzle()
+    private void BuildPuzzle(bool hideFeedback = true)
     {
         if (sourceBitmap is null) return;
 
@@ -459,7 +459,8 @@ public partial class MessageCaptchaPage : AnimatedModalPage
         verticalSliderReleased = false;
         HorizontalSlider.Value = maxX == 0 ? 0 : candidateX / maxX * 100;
         VerticalSlider.Value = maxY == 0 ? 0 : (1d - candidateY / maxY) * 100;
-        FeedbackLabel.IsVisible = false;
+
+        if (hideFeedback) FeedbackLabel.IsVisible = false;
 
         PuzzleCanvas.InvalidateSurface();
     }
@@ -653,7 +654,8 @@ public partial class MessageCaptchaPage : AnimatedModalPage
 
         FeedbackLabel.Text = "Фрагмент не совпал с вырезом. Положение сброшено.";
         FeedbackLabel.IsVisible = true;
-        BuildPuzzle();
+
+        BuildPuzzle(hideFeedback: false);
     }
 
     private bool IsPuzzleSolved()

@@ -5,14 +5,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
     xmlns:resources="clr-namespace:MessageAgent.Resources"
-    x:Name="Root">
+    xmlns:loading="clr-namespace:MessageAgent.Controls.Loading"
+    xmlns:models="clr-namespace:MessageAgent.Core.Models.Loading"
+    x:Name="Root"
+    x:DataType="loading:LoadingView">
     <ContentView.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <resources:DefaultResourceDictionary />
             </ResourceDictionary.MergedDictionaries>
 
-            <DataTemplate x:Key="LoadingActionTemplate">
+            <DataTemplate x:Key="LoadingActionTemplate" x:DataType="models:LoadingActionState">
                 <Grid
                     ColumnDefinitions="28,*,Auto"
                     RowDefinitions="Auto,Auto"
@@ -58,7 +61,7 @@
                 </Grid>
             </DataTemplate>
 
-            <DataTemplate x:Key="PopupLoadingActionTemplate">
+            <DataTemplate x:Key="PopupLoadingActionTemplate" x:DataType="models:LoadingActionState">
                 <Grid
                     ColumnDefinitions="28,*,Auto"
                     RowDefinitions="Auto,Auto"

@@ -465,27 +465,18 @@ public partial class MessageListView : MessageListViewBase
     {
         AddCollapsibleSection("Статусы", section =>
         {
-            section.Children.Add(new Label
+            MessageStatusTextFilterView statusFilterView = new()
             {
-                Text = "Название статуса содержит",
-                FontSize = 12,
-                Margin = new Thickness(2, 4, 2, 2),
-                TextColor = PopupTextColor
-            });
-
-            Entry statusEntry = new()
-            {
-                Placeholder = "Текст статуса",
                 Text = statusFilterText,
-                FontSize = 13,
-                ClearButtonVisibility = ClearButtonVisibility.WhileEditing
+                LabelColor = PopupTextColor
             };
-            statusEntry.TextChanged += (_, args) =>
+            statusFilterView.TextChanged += (_, args) =>
             {
                 statusFilterText = args.NewTextValue ?? string.Empty;
                 SetStatusTextFilter(statusFilterText);
             };
-            section.Children.Add(statusEntry);
+
+            section.Children.Add(statusFilterView);
         }, addDivider: false,
         isAvailable: () => HasMessagesWithStatuses() || !string.IsNullOrWhiteSpace(statusFilterText));
     }

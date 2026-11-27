@@ -7,7 +7,9 @@
     xmlns:loading="clr-namespace:MessageAgent.Controls.Loading"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
     xmlns:resources="clr-namespace:MessageAgent.Resources"
+    xmlns:pages="clr-namespace:MessageAgent.Controls.Loading"
     x:Name="Root"
+    x:DataType="pages:LoadingDialogPage"
     BackgroundColor="Transparent"
     Title="Loading">
     <ContentPage.Resources>
@@ -50,6 +52,9 @@
 
                     <Border
                         x:Name="CloseButton"
+                        AutomationProperties.AutomationId="message-loading-close"
+                        SemanticProperties.Description="Отменить и закрыть операцию"
+                        SemanticProperties.Hint="Остановить текущую операцию и закрыть диалог."
                         Grid.Column="1"
                         WidthRequest="32"
                         HeightRequest="32"
@@ -85,6 +90,8 @@
 
                 <Button
                     x:Name="CancelButton"
+                    AutomationProperties.AutomationId="message-loading-cancel"
+                    SemanticProperties.Description="Отменить выполнение"
                     Grid.Row="2"
                     Text="Отмена"
                     HeightRequest="44"

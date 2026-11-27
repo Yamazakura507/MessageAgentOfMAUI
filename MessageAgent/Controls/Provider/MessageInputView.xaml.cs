@@ -10,6 +10,16 @@ public partial class MessageInputView : ContentView
     private readonly MessageInputOptions options;
 
     /// <summary>
+    /// Gets the accessible name of the active input control.
+    /// </summary>
+    public string AccessibilityName => options.Placeholder ?? "Введите значение";
+
+    /// <summary>
+    /// Gets the keyboard configuration requested by the input options.
+    /// </summary>
+    public Keyboard RequestedKeyboard => options.Keyboard;
+
+    /// <summary>
     /// Initializes the input view and applies the supplied input and validation settings.
     /// </summary>
     /// <param name="options">The placeholder, keyboard, length, and validation configuration.</param>

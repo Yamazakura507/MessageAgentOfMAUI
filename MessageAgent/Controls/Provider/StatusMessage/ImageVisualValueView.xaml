@@ -2,7 +2,9 @@
 <ContentView
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="MessageAgent.Controls.Provider.StatusMessage.ImageVisualValueView">
+    xmlns:models="clr-namespace:MessageAgent.Core.Models.VisualValues"
+    x:Class="MessageAgent.Controls.Provider.StatusMessage.ImageVisualValueView"
+    x:DataType="models:ImageVisualValue">
 
     <Image
         x:Name="StatusImage"

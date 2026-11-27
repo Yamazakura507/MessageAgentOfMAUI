@@ -7,8 +7,11 @@
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
     xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
     xmlns:resources="clr-namespace:MessageAgent.Resources"
+    xmlns:models="clr-namespace:MessageAgent.Core.Models"
+    xmlns:maui="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
     x:Class="MessageAgent.Controls.Provider.MessageDetailsPage"
     x:Name="Root"
+    x:DataType="models:Message"
     BackgroundColor="Transparent"
     Title="Message details">
 
@@ -135,7 +138,7 @@
                             <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
                         </CollectionView.ItemsLayout>
                         <CollectionView.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="models:MessageLink">
                                 <Grid
                                     ColumnDefinitions="28,*"
                                     ColumnSpacing="10"
@@ -193,7 +196,7 @@
                             PositionChanged="ImagesCarouselOnPositionChanged"
                             IndicatorView="{x:Reference ImagesIndicator}">
                             <CarouselView.ItemTemplate>
-                                <DataTemplate>
+                                <DataTemplate x:DataType="maui:ImageSource">
                                     <Grid>
                                         <Image Source="{Binding .}" Aspect="AspectFit" HorizontalOptions="Fill" VerticalOptions="Fill" />
                                     </Grid>

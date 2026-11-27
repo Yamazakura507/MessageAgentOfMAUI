@@ -6,8 +6,10 @@
     xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
     xmlns:resources="clr-namespace:MessageAgent.Resources"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
+    xmlns:provider="clr-namespace:MessageAgent.Controls.Provider"
     x:Class="MessageAgent.Controls.Provider.StatusOverflowPage"
     x:Name="Root"
+    x:DataType="provider:StatusOverflowPage"
     BackgroundColor="Transparent"
     Title="Все статусы">
 

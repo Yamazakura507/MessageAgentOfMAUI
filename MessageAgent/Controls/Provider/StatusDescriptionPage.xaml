@@ -4,7 +4,9 @@
     xmlns:modal="clr-namespace:MessageAgent.Controls.Provider.Abstract"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:resources="clr-namespace:MessageAgent.Resources"
+    xmlns:provider="clr-namespace:MessageAgent.Controls.Provider"
     x:Class="MessageAgent.Controls.Provider.StatusDescriptionPage"
+    x:DataType="provider:StatusDescriptionPage"
     BackgroundColor="Transparent"
     Shell.NavBarIsVisible="False">
     <ContentPage.Resources>

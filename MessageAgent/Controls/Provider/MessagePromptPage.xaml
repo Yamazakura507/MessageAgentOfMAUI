@@ -6,8 +6,10 @@
     xmlns:resources="clr-namespace:MessageAgent.Resources"
     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
     xmlns:lottie="clr-namespace:LottieAgent.Controls;assembly=LottieAgent"
+    xmlns:models="clr-namespace:MessageAgent.Core.Models"
     x:Class="MessageAgent.Controls.Provider.MessagePromptPage"
     x:Name="Root"
+    x:DataType="models:Message"
     BackgroundColor="Transparent"
     Title="Message prompt">
     <ContentPage.Resources>
@@ -82,6 +84,8 @@
                           ColumnDefinitions="*,*"
                           ColumnSpacing="10">
                         <Button x:Name="CancelActionButton"
+                                AutomationProperties.AutomationId="message-prompt-cancel"
+                                SemanticProperties.Description="{Binding Source={x:Reference Root}, Path=CancelText}"
                                 Text="{Binding Source={x:Reference Root}, Path=CancelText}"
                                 Clicked="CancelButtonOnClicked"
                                 BackgroundColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Surface}"
@@ -89,6 +93,8 @@
                                 BorderWidth="1"
                                 TextColor="{Binding Type, Converter={StaticResource DialogColorConverter}, ConverterParameter=Accent}" />
                         <Button x:Name="AcceptActionButton"
+                                AutomationProperties.AutomationId="message-prompt-accept"
+                                SemanticProperties.Description="{Binding Source={x:Reference Root}, Path=AcceptText}"
                                 Grid.Column="1"
                                 Text="{Binding Source={x:Reference Root}, Path=AcceptText}"
                                 

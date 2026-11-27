@@ -3,8 +3,11 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:resources="clr-namespace:MessageAgent.Resources"
+    xmlns:controls="clr-namespace:MessageAgent.Controls.Provider"
+    xmlns:models="clr-namespace:MessageAgent.Core.Models.Dialogs"
     x:Class="MessageAgent.Controls.Provider.MessageQuestionView"
-    x:Name="Root">
+    x:Name="Root"
+    x:DataType="controls:MessageQuestionView">
     <ContentView.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -18,8 +21,10 @@
                 AlignItems="Center"
                 BindableLayout.ItemsSource="{Binding Buttons, Source={x:Reference Root}}">
         <BindableLayout.ItemTemplate>
-            <DataTemplate>
+            <DataTemplate x:DataType="models:MessageQuestionButton">
                 <Button Text="{Binding Text}"
+                        SemanticProperties.Description="{Binding Text}"
+                        SemanticProperties.Hint="Выбрать этот вариант."
                         CommandParameter="{Binding .}"
                         MinimumWidthRequest="100"
                         Margin="4"

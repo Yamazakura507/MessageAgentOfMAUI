@@ -6,8 +6,11 @@
     xmlns:views="clr-namespace:MessageAgent.Controls.Provider"
     xmlns:statusViews="clr-namespace:MessageAgent.Controls.Provider.StatusMessage"
     xmlns:resources="clr-namespace:MessageAgent.Resources"
+    xmlns:provider="clr-namespace:MessageAgent.Controls.Provider"
+    xmlns:statusModels="clr-namespace:MessageAgent.Services.Models"
     x:Class="MessageAgent.Controls.Provider.MessageProvider"
     x:Name="Root"
+    x:DataType="provider:MessageProvider"
     SizeChanged="UpdatePresentationOnSizeChanged">
 
     <ContentView.Resources>
@@ -104,7 +107,7 @@
                         Spacing="3"
                         BindableLayout.ItemsSource="{Binding VisibleStatuses, Source={x:Reference Root}}">
                         <BindableLayout.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="statusModels:StatusPresentationItem">
                                 <views:StatusValueView
                                     Status="{Binding Status}"
                                     ShowTitleOverride="{Binding ShowTitle}"
