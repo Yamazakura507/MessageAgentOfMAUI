@@ -22,6 +22,19 @@ public partial class LoadingView : ContentView, IDisposable
     private readonly ObservableCollection<LoadingActionState> sortedActionStates = new();
     private readonly ObservableCollection<LoadingActionState> visibleActionStates = new();
     private readonly Dictionary<LoadingActionState, int> sortProgressBuckets = new();
+    private readonly Dictionary<LottieView, StatusAnimationViewRegistration> statusAnimationViews = new(ReferenceEqualityComparer.Instance);
+
+    private sealed class StatusAnimationViewRegistration
+    {
+        public bool IsPopup { get; }
+        public LoadingActionState? State { get; set; }
+        public bool IsActive { get; set; }
+
+        public StatusAnimationViewRegistration(bool isPopup)
+        {
+            IsPopup = isPopup;
+        }
+    }
     private CancellationTokenSource? executionSource;
     private bool isActionListRefreshQueued;
     private TimeSpan lastExecutionTime;
@@ -139,6 +152,7 @@ public partial class LoadingView : ContentView, IDisposable
             if (isActionPopupVisible == value) return;
             isActionPopupVisible = value;
             OnPropertyChanged();
+            RefreshStatusAnimationViews();
         }
     }
 
@@ -171,6 +185,7 @@ public partial class LoadingView : ContentView, IDisposable
 
             OnPropertyChanged();
             OnPropertyChanged(nameof(LastExecutionTime));
+            RefreshStatusAnimationViews();
         }
     }
 
@@ -260,6 +275,7 @@ public partial class LoadingView : ContentView, IDisposable
 
             OnPropertyChanged(nameof(IsStatusVisible));
             OnPropertyChanged(nameof(AnimationRowSpacing));
+            RefreshStatusAnimationViews();
         }
     }
 
@@ -600,8 +616,7 @@ public partial class LoadingView : ContentView, IDisposable
                     sortProgressBuckets[state] = 0;
                     state.PropertyChanged += ActionStateOnPropertyChanged;
 
-                    if (executionMode == LoadingExecutionMode.Parallel || index == 0)
-                        state.MarkRunning();
+                    if (executionMode == LoadingExecutionMode.Parallel || index == 0) state.MarkRunning();
 
                     ActionStates.Add(state);
                 }
@@ -632,6 +647,7 @@ public partial class LoadingView : ContentView, IDisposable
             else
             {
                 Exception[] errors = await ExecuteParallelAsync(work, states, linked.Token);
+
                 if (errors.Length == 1) failure = errors[0];
                 else if (errors.Length > 1) failure = new AggregateException(errors);
 
@@ -668,8 +684,7 @@ public partial class LoadingView : ContentView, IDisposable
             {
                 foreach (LoadingActionState state in states)
                 {
-                    if (state.Status is LoadingActionStatus.Pending or LoadingActionStatus.Running)
-                        state.MarkFailed(exception);
+                    if (state.Status is LoadingActionStatus.Pending or LoadingActionStatus.Running) state.MarkFailed(exception);
                 }
 
                 if (executionMode == LoadingExecutionMode.Sequential && ActionStates.Count == 0 && states.Length > 0) ActionStates.Add(states[0]);
@@ -679,6 +694,8 @@ public partial class LoadingView : ContentView, IDisposable
         {
             stopwatch.Stop();
             lastExecutionTime = stopwatch.Elapsed;
+
+            await WaitForVisibleStatusAnimationsAsync();
 
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
@@ -704,6 +721,105 @@ public partial class LoadingView : ContentView, IDisposable
         return new LoadingResult(Status, lastExecutionTime, failure);
     }
 
+    private void StatusAnimationOnLoaded(object? sender, EventArgs e) => RegisterStatusAnimationView(sender, isPopup: false);
+
+    private void PopupStatusAnimationOnLoaded(object? sender, EventArgs e) => RegisterStatusAnimationView(sender, isPopup: true);
+
+    private void RegisterStatusAnimationView(object? sender, bool isPopup)
+    {
+        if (sender is not LottieView view) return;
+
+        statusAnimationViews[view] = new StatusAnimationViewRegistration(isPopup);
+
+        RefreshStatusAnimationView(view);
+    }
+
+    private void StatusAnimationOnUnloaded(object? sender, EventArgs e) => UnregisterStatusAnimationView(sender);
+
+    private void PopupStatusAnimationOnUnloaded(object? sender, EventArgs e) => UnregisterStatusAnimationView(sender);
+
+    private void UnregisterStatusAnimationView(object? sender)
+    {
+        if (sender is not LottieView view
+            || !statusAnimationViews.Remove(view, out StatusAnimationViewRegistration? registration)) return;
+
+        view.IsPlaying = false;
+
+        if (registration.IsActive) registration.State?.DetachStatusAnimationView();
+    }
+
+    private void StatusAnimationOnBindingContextChanged(object? sender, EventArgs e) => RefreshStatusAnimationView(sender);
+
+    private void PopupStatusAnimationOnBindingContextChanged(object? sender, EventArgs e) => RefreshStatusAnimationView(sender);
+
+    private void RefreshStatusAnimationViews()
+    {
+        foreach (LottieView view in statusAnimationViews.Keys.ToArray()) RefreshStatusAnimationView(view);
+    }
+
+    private void RefreshStatusAnimationView(object? sender)
+    {
+        if (sender is not LottieView view
+            || !statusAnimationViews.TryGetValue(view, out StatusAnimationViewRegistration? registration)) return;
+
+        LoadingActionState? nextState = view.BindingContext as LoadingActionState;
+        bool shouldBeActive = IsRunning && ShowStatus && (!registration.IsPopup || IsActionPopupVisible) && nextState is not null;
+        bool stateChanged = !ReferenceEquals(registration.State, nextState);
+
+        if (stateChanged) view.Progress = 0d;
+        if (view.IsPlaying != shouldBeActive) view.IsPlaying = shouldBeActive;
+        if (registration.IsActive && (!shouldBeActive || stateChanged)) registration.State?.DetachStatusAnimationView();
+        if (shouldBeActive && (!registration.IsActive || stateChanged)) nextState!.AttachStatusAnimationView();
+
+        registration.State = nextState;
+        registration.IsActive = shouldBeActive;
+    }
+
+    private void StatusAnimationOnCompleted(object? sender, EventArgs e) => MarkStatusAnimationCompleted(sender);
+
+    private void PopupStatusAnimationOnCompleted(object? sender, EventArgs e) => MarkStatusAnimationCompleted(sender);
+
+    private void MarkStatusAnimationCompleted(object? sender)
+    {
+        if (sender is LottieView view
+            && statusAnimationViews.TryGetValue(view, out StatusAnimationViewRegistration? registration)
+            && registration.IsActive
+            && registration.State is LoadingActionState state
+            && ReferenceEquals(view.BindingContext, state)) state.MarkStatusAnimationCompleted();
+    }
+
+    private async Task WaitForVisibleStatusAnimationsAsync()
+    {
+        await MainThread.InvokeOnMainThreadAsync(RefreshActionLists);
+        await Task.Delay(50);
+
+        Task[] animations = await MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            RefreshStatusAnimationViews();
+
+            return statusAnimationViews.Values
+                .Where(registration => registration.IsActive
+                    && registration.State is { Status: LoadingActionStatus.Completed
+                        or LoadingActionStatus.Failed
+                        or LoadingActionStatus.Cancelled })
+                .Select(registration => registration.State!)
+                .Distinct()
+                .Select(state => state.WaitForStatusAnimationAsync())
+                .ToArray();
+        });
+
+        if (animations.Length == 0) return;
+
+        try
+        {
+            await Task.WhenAll(animations).WaitAsync(TimeSpan.FromSeconds(6));
+        }
+        catch (TimeoutException)
+        {
+            // A missing/off-screen animation must never keep the loading overlay open indefinitely.
+        }
+    }
+
     private void ShowAllTasksOnClicked(object? sender, EventArgs e) => IsActionPopupVisible = true;
 
     private void CloseAllTasksOnClicked(object? sender, EventArgs e) => IsActionPopupVisible = false;
@@ -726,7 +842,30 @@ public partial class LoadingView : ContentView, IDisposable
             return;
         }
 
-        if (e.PropertyName is nameof(LoadingActionState.Status) or nameof(LoadingActionState.FinishedAt)) QueueActionListRefresh();
+        if (e.PropertyName == nameof(LoadingActionState.Status))
+        {
+            ResetStatusAnimationViews(state);
+            QueueActionListRefresh();
+
+            return;
+        }
+
+        if (e.PropertyName == nameof(LoadingActionState.FinishedAt)) QueueActionListRefresh();
+    }
+
+    private void ResetStatusAnimationViews(LoadingActionState state)
+    {
+        void Reset()
+        {
+            foreach (LottieView view in statusAnimationViews.Keys.ToArray())
+            {
+                if (ReferenceEquals(view.BindingContext, state))
+                    view.Progress = 0d;
+            }
+        }
+
+        if (MainThread.IsMainThread) Reset();
+        else MainThread.BeginInvokeOnMainThread(Reset);
     }
 
     private void QueueActionListRefresh()
@@ -867,10 +1006,7 @@ public partial class LoadingView : ContentView, IDisposable
         return loading;
     }
 
-    private async Task<Exception?> ExecuteSequentialAsync(
-        LoadingAction[] actions,
-        LoadingActionState[] states,
-        CancellationToken cancellationToken)
+    private async Task<Exception?> ExecuteSequentialAsync(LoadingAction[] actions, LoadingActionState[] states, CancellationToken cancellationToken)
     {
         for (int index = 0; index < actions.Length; index++)
         {
@@ -884,6 +1020,7 @@ public partial class LoadingView : ContentView, IDisposable
                 state.MarkRunning();
 
                 currentActionDescription = state.Description;
+
                 ToolTipHelper.SetText(Animation, currentActionDescription);
             });
 
@@ -924,10 +1061,7 @@ public partial class LoadingView : ContentView, IDisposable
         return null;
     }
 
-    private async Task<Exception[]> ExecuteParallelAsync(
-        LoadingAction[] actions,
-        LoadingActionState[] states,
-        CancellationToken cancellationToken)
+    private async Task<Exception[]> ExecuteParallelAsync(LoadingAction[] actions, LoadingActionState[] states, CancellationToken cancellationToken)
     {
         async Task<Exception?> RunOneAsync(LoadingAction action, LoadingActionState state)
         {
@@ -975,7 +1109,6 @@ public partial class LoadingView : ContentView, IDisposable
         if (selected.View is LottieView externalView)
         {
             Color externalAccent = selected.AccentColor ?? CreateDefaultAnimation().AccentColor!;
-
             string? externalJson = externalView.SourceJson;
 
             if (string.IsNullOrWhiteSpace(externalJson) && !string.IsNullOrWhiteSpace(externalView.Source))
@@ -1287,7 +1420,15 @@ public partial class LoadingView : ContentView, IDisposable
         RestoreExternalAnimationView();
         RestoreHostedVisualTree();
         RestoreHostedButtonText();
+
         IsActionPopupVisible = false;
+
+        foreach (StatusAnimationViewRegistration registration in statusAnimationViews.Values)
+        {
+            if (registration.IsActive) registration.State?.DetachStatusAnimationView();
+        }
+
+        statusAnimationViews.Clear();
 
         foreach (LoadingActionState state in ActionStates) state.PropertyChanged -= ActionStateOnPropertyChanged;
 

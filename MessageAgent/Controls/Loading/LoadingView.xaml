@@ -14,19 +14,70 @@
 
             <DataTemplate x:Key="LoadingActionTemplate">
                 <Grid
-                    ColumnDefinitions="22,*,Auto"
+                    ColumnDefinitions="28,*,Auto"
                     RowDefinitions="Auto,Auto"
                     ColumnSpacing="7"
                     RowSpacing="2"
                     Padding="2,2">
-                    <Label
+                    <lottie:LottieView
                         Grid.RowSpan="2"
-                        Text="{Binding StatusGlyph}"
-                        TextColor="{Binding StatusColor}"
-                        FontSize="17"
-                        FontAttributes="Bold"
-                        HorizontalTextAlignment="Center"
+                        Source="{Binding StatusAnimationSource}"
+                        IsLooping="{Binding StatusAnimationIsLooping}"
+                        Loaded="StatusAnimationOnLoaded"
+                        Unloaded="StatusAnimationOnUnloaded"
+                        BindingContextChanged="StatusAnimationOnBindingContextChanged"
+                        AnimationCompleted="StatusAnimationOnCompleted"
+                        WidthRequest="24"
+                        HeightRequest="24"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        BackgroundColor="Transparent" />
+                    <Label
+                        Grid.Column="1"
+                        Text="{Binding Description}"
+                        TextColor="{Binding Source={x:Reference Root}, Path=StatusColor}"
+                        FontSize="13"
+                        LineBreakMode="TailTruncation"
+                        MaxLines="2"
                         VerticalTextAlignment="Center" />
+                    <Label
+                        Grid.Column="2"
+                        Text="{Binding ProgressText}"
+                        TextColor="{Binding Source={x:Reference Root}, Path=StatusColor}"
+                        FontSize="12"
+                        IsVisible="{Binding IsShowProgress}"
+                        VerticalTextAlignment="Center" />
+                    <ProgressBar
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Grid.ColumnSpan="2"
+                        Progress="{Binding Progress}"
+                        ProgressColor="{Binding Source={x:Reference Root}, Path=AccentColor}"
+                        HeightRequest="4"
+                        IsVisible="{Binding IsShowProgress}" />
+                </Grid>
+            </DataTemplate>
+
+            <DataTemplate x:Key="PopupLoadingActionTemplate">
+                <Grid
+                    ColumnDefinitions="28,*,Auto"
+                    RowDefinitions="Auto,Auto"
+                    ColumnSpacing="7"
+                    RowSpacing="2"
+                    Padding="2,2">
+                    <lottie:LottieView
+                        Grid.RowSpan="2"
+                        Source="{Binding StatusAnimationSource}"
+                        IsLooping="{Binding StatusAnimationIsLooping}"
+                        Loaded="PopupStatusAnimationOnLoaded"
+                        Unloaded="PopupStatusAnimationOnUnloaded"
+                        BindingContextChanged="PopupStatusAnimationOnBindingContextChanged"
+                        AnimationCompleted="PopupStatusAnimationOnCompleted"
+                        WidthRequest="24"
+                        HeightRequest="24"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        BackgroundColor="Transparent" />
                     <Label
                         Grid.Column="1"
                         Text="{Binding Description}"
@@ -185,7 +236,7 @@
                             <LinearItemsLayout Orientation="Vertical" ItemSpacing="5" />
                         </CollectionView.ItemsLayout>
                         <CollectionView.ItemTemplate>
-                            <StaticResource Key="LoadingActionTemplate" />
+                            <StaticResource Key="PopupLoadingActionTemplate" />
                         </CollectionView.ItemTemplate>
                     </CollectionView>
                 </Grid>

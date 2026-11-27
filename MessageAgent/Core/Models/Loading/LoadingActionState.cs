@@ -13,6 +13,10 @@ public sealed class LoadingActionState : INotifyPropertyChanged
     private double progress;
     private Exception? exception;
     private DateTimeOffset? finishedAt;
+    private int loadedStatusAnimationViewCount;
+    private int statusAnimationViewGeneration;
+    private TaskCompletionSource statusAnimationCompletion = CompletedAnimationSource();
+    private bool IsTerminalStatus => Status is LoadingActionStatus.Completed or LoadingActionStatus.Failed or LoadingActionStatus.Cancelled;
 
     /// <summary>
     /// Gets the original zero-based action position.
@@ -34,9 +38,17 @@ public sealed class LoadingActionState : INotifyPropertyChanged
         {
             if (status == value) return;
             status = value;
+            statusAnimationCompletion = value is LoadingActionStatus.Completed
+                or LoadingActionStatus.Failed
+                or LoadingActionStatus.Cancelled
+                    ? new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
+                    : CompletedAnimationSource();
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(StatusGlyph));
             OnPropertyChanged(nameof(StatusColor));
+            OnPropertyChanged(nameof(StatusAnimationSource));
+            OnPropertyChanged(nameof(StatusAnimationIsLooping));
         }
     }
 
@@ -102,7 +114,26 @@ public sealed class LoadingActionState : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Gets the compact status glyph used by the loading dialog.
+    /// Gets the Lottie asset used to represent the current action state.
+    /// </summary>
+    public string StatusAnimationSource => Status switch
+    {
+        LoadingActionStatus.Pending => "Lotties/LoadingActionStatus/pending.json",
+        LoadingActionStatus.Running => "Lotties/LoadingActionStatus/running.json",
+        LoadingActionStatus.Completed => "Lotties/LoadingActionStatus/completed.json",
+        LoadingActionStatus.Failed or LoadingActionStatus.Cancelled
+            => "Lotties/LoadingActionStatus/failedOrCancelled.json",
+        _ => "Lotties/LoadingActionStatus/pending.json"
+    };
+
+    /// <summary>
+    /// Gets whether the current status animation should repeat.
+    /// Pending and Running repeat; terminal states play once.
+    /// </summary>
+    public bool StatusAnimationIsLooping => Status is LoadingActionStatus.Pending or LoadingActionStatus.Running;
+
+    /// <summary>
+    /// Gets the compact status glyph for compatibility with existing consumers.
     /// </summary>
     public string StatusGlyph => Status switch
     {
@@ -135,6 +166,71 @@ public sealed class LoadingActionState : INotifyPropertyChanged
         Sequence = sequence;
     }
 
+    /// <summary>
+    /// Waits until the current terminal-state Lottie animation has reached its final frame.
+    /// </summary>
+    internal Task WaitForStatusAnimationAsync() => statusAnimationCompletion.Task;
+
+    /// <summary>
+    /// Registers a status animation view that is currently part of a visible list.
+    /// </summary>
+    internal void AttachStatusAnimationView()
+    {
+        Interlocked.Increment(ref statusAnimationViewGeneration);
+        Interlocked.Increment(ref loadedStatusAnimationViewCount);
+    }
+
+    /// <summary>
+    /// Unregisters a status animation view. If the last view disappears before its animation
+    /// completes, the wait is released because there is no longer a visible animation to finish.
+    /// </summary>
+    internal void DetachStatusAnimationView()
+    {
+        int remaining = Interlocked.Decrement(ref loadedStatusAnimationViewCount);
+
+        if (remaining < 0)
+        {
+            Interlocked.Exchange(ref loadedStatusAnimationViewCount, 0);
+
+            return;
+        }
+
+        if (remaining == 0 && IsTerminalStatus)
+        {
+            int generation = Volatile.Read(ref statusAnimationViewGeneration);
+            _ = CompleteWhenNoAnimationViewRemainsAsync(generation);
+        }
+    }
+
+    private async Task CompleteWhenNoAnimationViewRemainsAsync(int generation)
+    {
+        await Task.Delay(300);
+
+        if (Volatile.Read(ref loadedStatusAnimationViewCount) == 0
+            && Volatile.Read(ref statusAnimationViewGeneration) == generation
+            && IsTerminalStatus)
+        {
+            MarkStatusAnimationCompleted();
+        }
+    }
+
+    /// <summary>
+    /// Signals that an active terminal-state Lottie animation has completed.
+    /// </summary>
+    internal void MarkStatusAnimationCompleted()
+    {
+        if (IsTerminalStatus) statusAnimationCompletion.TrySetResult();
+    }
+
+    private static TaskCompletionSource CompletedAnimationSource()
+    {
+        TaskCompletionSource source = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        source.SetResult();
+
+        return source;
+    }
+
     internal void MarkRunning() => Status = LoadingActionStatus.Running;
 
     internal void ReportProgress(double percentage)
@@ -163,6 +259,5 @@ public sealed class LoadingActionState : INotifyPropertyChanged
     /// <inheritdoc />
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
