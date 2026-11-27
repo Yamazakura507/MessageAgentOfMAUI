@@ -96,7 +96,7 @@ public partial class LoadingDialogPage : AnimatedModalPage
 
         Loading.ShowBackdrop = false;
         Loading.ShowSurface = false;
-        Loading.ShowStatus = HasDecoratedDialog;
+        Loading.ShowStatus = true;
 
         if (HasDecoratedDialog) return;
 
@@ -106,8 +106,8 @@ public partial class LoadingDialogPage : AnimatedModalPage
         DialogPanel.Padding = new Thickness(0);
         DialogPanel.HorizontalOptions = LayoutOptions.Fill;
         DialogPanel.VerticalOptions = LayoutOptions.Fill;
-        DialogPanel.MaximumWidthRequest = -1;
-        DialogPanel.MaximumHeightRequest = -1;
+        DialogPanel.MaximumWidthRequest = double.PositiveInfinity;
+        DialogPanel.MaximumHeightRequest = double.PositiveInfinity;
         DialogPanel.BackgroundColor = Colors.Transparent;
         DialogPanel.Stroke = Colors.Transparent;
         DialogPanel.StrokeThickness = 0;
@@ -119,13 +119,41 @@ public partial class LoadingDialogPage : AnimatedModalPage
     /// <summary>
     /// Executes actions and closes the dialog after the result is available.
     /// </summary>
+    public Task<LoadingResult> ExecuteAsync(
+        IEnumerable<LoadingAction> actions,
+        IEnumerable<LoadingAnimation>? animations,
+        LoadingExecutionMode executionMode,
+        CancellationToken cancellationToken = default,
+        int maxVisibleTasks = 2,
+        LoadingProgressSortMode sortProgress = LoadingProgressSortMode.Process) => ExecuteAsync(
+            actions,
+            animations,
+            executionMode,
+            false,
+            cancellationToken,
+            maxVisibleTasks,
+            sortProgress);
+
+    /// <summary>
+    /// Executes actions with optional per-action progress and closes the dialog after completion.
+    /// </summary>
     public async Task<LoadingResult> ExecuteAsync(
         IEnumerable<LoadingAction> actions,
         IEnumerable<LoadingAnimation>? animations,
         LoadingExecutionMode executionMode,
-        CancellationToken cancellationToken = default)
+        bool isShowProgress,
+        CancellationToken cancellationToken = default,
+        int maxVisibleTasks = 2,
+        LoadingProgressSortMode sortProgress = LoadingProgressSortMode.Process)
     {
-        LoadingResult result = await Loading.ExecuteAsync(actions, animations, executionMode, cancellationToken);
+        LoadingResult result = await Loading.ExecuteAsync(
+            actions,
+            isShowProgress,
+            animations,
+            executionMode,
+            cancellationToken,
+            maxVisibleTasks,
+            sortProgress);
 
         if (!isClosing)
         {

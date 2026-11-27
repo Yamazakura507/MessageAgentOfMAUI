@@ -11,6 +11,47 @@
             <ResourceDictionary.MergedDictionaries>
                 <resources:DefaultResourceDictionary />
             </ResourceDictionary.MergedDictionaries>
+
+            <DataTemplate x:Key="LoadingActionTemplate">
+                <Grid
+                    ColumnDefinitions="22,*,Auto"
+                    RowDefinitions="Auto,Auto"
+                    ColumnSpacing="7"
+                    RowSpacing="2"
+                    Padding="2,2">
+                    <Label
+                        Grid.RowSpan="2"
+                        Text="{Binding StatusGlyph}"
+                        TextColor="{Binding StatusColor}"
+                        FontSize="17"
+                        FontAttributes="Bold"
+                        HorizontalTextAlignment="Center"
+                        VerticalTextAlignment="Center" />
+                    <Label
+                        Grid.Column="1"
+                        Text="{Binding Description}"
+                        TextColor="{Binding Source={x:Reference Root}, Path=StatusColor}"
+                        FontSize="13"
+                        LineBreakMode="TailTruncation"
+                        MaxLines="2"
+                        VerticalTextAlignment="Center" />
+                    <Label
+                        Grid.Column="2"
+                        Text="{Binding ProgressText}"
+                        TextColor="{Binding Source={x:Reference Root}, Path=StatusColor}"
+                        FontSize="12"
+                        IsVisible="{Binding IsShowProgress}"
+                        VerticalTextAlignment="Center" />
+                    <ProgressBar
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Grid.ColumnSpan="2"
+                        Progress="{Binding Progress}"
+                        ProgressColor="{Binding Source={x:Reference Root}, Path=AccentColor}"
+                        HeightRequest="4"
+                        IsVisible="{Binding IsShowProgress}" />
+                </Grid>
+            </DataTemplate>
         </ResourceDictionary>
     </ContentView.Resources>
 
@@ -40,23 +81,113 @@
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="18" />
                 </Border.StrokeShape>
-                <Grid x:Name="AnimationHost" RowDefinitions="*,Auto" RowSpacing="8">
+                <Grid
+                    x:Name="AnimationHost"
+                    RowDefinitions="*,Auto"
+                    RowSpacing="{Binding AnimationRowSpacing, Source={x:Reference Root}}">
                     <lottie:LottieView
                         x:Name="Animation"
+                        Grid.Row="0"
                         HorizontalOptions="Center"
                         VerticalOptions="Center"
                         IsPlaying="False"
                         IsLooping="True"
                         Progress="0"
                         BackgroundColor="Transparent" />
-                    <Label
-                        x:Name="StatusLabel"
+
+                    <Grid
+                        x:Name="ActionListHost"
                         Grid.Row="1"
-                        Text="Загрузка..."
-                        FontSize="13"
-                        HorizontalTextAlignment="Center"
-                        IsVisible="{Binding IsStatusVisible, Source={x:Reference Root}}"
-                        TextColor="{Binding StatusColor, Source={x:Reference Root}}" />
+                        ColumnDefinitions="*,34"
+                        ColumnSpacing="4"
+                        IsVisible="{Binding IsStatusVisible, Source={x:Reference Root}}">
+                        <CollectionView
+                            x:Name="ActionList"
+                            Grid.Column="0"
+                            ItemsSource="{Binding VisibleActionStates, Source={x:Reference Root}}"
+                            SelectionMode="None"
+                            MaximumHeightRequest="{Binding VisibleListHeight, Source={x:Reference Root}}">
+                            <CollectionView.ItemsLayout>
+                                <LinearItemsLayout Orientation="Vertical" ItemSpacing="3" />
+                            </CollectionView.ItemsLayout>
+                            <CollectionView.ItemTemplate>
+                                <StaticResource Key="LoadingActionTemplate" />
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                        <Button
+                            x:Name="ShowAllTasksButton"
+                            Grid.Column="1"
+                            Text="⋮"
+                            FontSize="24"
+                            Padding="0"
+                            WidthRequest="32"
+                            HeightRequest="38"
+                            MinimumWidthRequest="32"
+                            MinimumHeightRequest="38"
+                            BackgroundColor="Transparent"
+                            TextColor="{Binding StatusColor, Source={x:Reference Root}}"
+                            IsVisible="{Binding HasOverflowActions, Source={x:Reference Root}}"
+                            ToolTipProperties.Text="Показать все задачи"
+                            Clicked="ShowAllTasksOnClicked"
+                            VerticalOptions="Center" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid
+            x:Name="ActionPopupLayer"
+            ZIndex="20"
+            IsVisible="{Binding IsActionPopupVisible, Source={x:Reference Root}}"
+            BackgroundColor="#99000000"
+            Padding="16">
+            <Border
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                WidthRequest="340"
+                MaximumWidthRequest="420"
+                MaximumHeightRequest="440"
+                Padding="12"
+                BackgroundColor="{Binding SurfaceColor, Source={x:Reference Root}}"
+                Stroke="{Binding SurfaceStrokeColor, Source={x:Reference Root}}"
+                StrokeThickness="1.5">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="16" />
+                </Border.StrokeShape>
+                <Grid RowDefinitions="Auto,*" RowSpacing="8">
+                    <Grid ColumnDefinitions="*,36">
+                        <Label
+                            Text="Все задачи"
+                            FontSize="15"
+                            FontAttributes="Bold"
+                            TextColor="{Binding StatusColor, Source={x:Reference Root}}"
+                            VerticalOptions="Center" />
+                        <Button
+                            Grid.Column="1"
+                            Text="×"
+                            FontSize="22"
+                            Padding="0"
+                            WidthRequest="34"
+                            HeightRequest="34"
+                            MinimumWidthRequest="34"
+                            MinimumHeightRequest="34"
+                            BackgroundColor="Transparent"
+                            TextColor="{Binding StatusColor, Source={x:Reference Root}}"
+                            Clicked="CloseAllTasksOnClicked" />
+                    </Grid>
+                    <CollectionView
+                        x:Name="AllActionList"
+                        Grid.Row="1"
+                        ItemsSource="{Binding SortedActionStates, Source={x:Reference Root}}"
+                        SelectionMode="None"
+                        MaximumHeightRequest="370">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="5" />
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <StaticResource Key="LoadingActionTemplate" />
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
                 </Grid>
             </Border>
         </Grid>

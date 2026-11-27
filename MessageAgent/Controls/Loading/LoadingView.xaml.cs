@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using LottieAgent.Controls;
 using LottieAgent.Extensions;
@@ -17,11 +18,20 @@ public partial class LoadingView : ContentView, IDisposable
 {
     private readonly Stopwatch stopwatch = new();
     private readonly Dictionary<VisualElement, bool> originalEnabledStates = new(ReferenceEqualityComparer.Instance);
+    private readonly ObservableCollection<LoadingActionState> actionStates = new();
+    private readonly ObservableCollection<LoadingActionState> sortedActionStates = new();
+    private readonly ObservableCollection<LoadingActionState> visibleActionStates = new();
+    private readonly Dictionary<LoadingActionState, int> sortProgressBuckets = new();
     private CancellationTokenSource? executionSource;
+    private bool isActionListRefreshQueued;
     private TimeSpan lastExecutionTime;
     private bool showBackdrop = true;
     private bool showSurface = true;
     private bool showStatus = true;
+    private bool isShowProgress;
+    private int maxVisibleTasks = 2;
+    private LoadingProgressSortMode sortProgress = LoadingProgressSortMode.Process;
+    private bool isActionPopupVisible;
     private bool trackDominantColor;
     private string currentActionDescription = string.Empty;
     private string? externalPreviousToolTip;
@@ -29,6 +39,8 @@ public partial class LoadingView : ContentView, IDisposable
     private bool isRunning;
     private bool isDisposed;
     private View? originalContent;
+    private Button? hostedButton;
+    private string? originalButtonText;
     private Action? restoreHost;
     private Action? restoreAnimationView;
     private LottieView? activeExternalView;
@@ -36,12 +48,12 @@ public partial class LoadingView : ContentView, IDisposable
     private bool externalPreviousIsLooping;
     private double externalPreviousWidth;
     private double externalPreviousHeight;
+    private double externalPreviousScale = 1d;
+    private LayoutOptions externalPreviousHorizontalOptions;
+    private LayoutOptions externalPreviousVerticalOptions;
+    private Thickness externalPreviousMargin;
     private double animationAspectRatio = 1d;
     private LoadingStatus status = LoadingStatus.Pending;
-
-    private EventHandler? pageDisappearingHandler;
-    private EventHandler? controlUnloadedHandler;
-    private EventHandler? windowDestroyingHandler;
 
     /// <summary>
     /// Gets or sets the content displayed beneath the loading overlay.
@@ -56,6 +68,94 @@ public partial class LoadingView : ContentView, IDisposable
     /// Gets the duration of the current operation at the moment of access, or the last duration after completion.
     /// </summary>
     public TimeSpan LastExecutionTime => stopwatch.IsRunning ? stopwatch.Elapsed : lastExecutionTime;
+
+    /// <summary>
+    /// Gets the observable rows displayed for the current action or parallel action set.
+    /// </summary>
+    public ObservableCollection<LoadingActionState> ActionStates => actionStates;
+
+    /// <summary>
+    /// Gets the complete, sorted action list used by the expanded task context.
+    /// </summary>
+    public ObservableCollection<LoadingActionState> SortedActionStates => sortedActionStates;
+
+    /// <summary>
+    /// Gets the limited, sorted action list displayed beside the animation.
+    /// </summary>
+    public ObservableCollection<LoadingActionState> VisibleActionStates => visibleActionStates;
+
+    /// <summary>
+    /// Gets whether the full action list contains more items than the visible limit.
+    /// </summary>
+    public bool HasOverflowActions => sortedActionStates.Count > MaxVisibleTasks;
+
+    /// <summary>
+    /// Gets the maximum height reserved for the visible task list.
+    /// </summary>
+    public double VisibleListHeight => Math.Max(44d, MaxVisibleTasks * 48d);
+
+    /// <summary>
+    /// Gets or sets the maximum number of task descriptions displayed beside the animation.
+    /// The value is clamped to at least one. The default is two.
+    /// </summary>
+    public int MaxVisibleTasks
+    {
+        get => maxVisibleTasks;
+        set
+        {
+            int normalized = Math.Max(1, value);
+            if (maxVisibleTasks == normalized) return;
+            maxVisibleTasks = normalized;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasOverflowActions));
+            OnPropertyChanged(nameof(VisibleListHeight));
+            RefreshActionLists();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the sort order shared by the visible and expanded task lists.
+    /// </summary>
+    public LoadingProgressSortMode SortProgress
+    {
+        get => sortProgress;
+        set
+        {
+            if (sortProgress == value) return;
+            sortProgress = value;
+            OnPropertyChanged();
+            RefreshActionLists();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether the expanded task context is open.
+    /// </summary>
+    public bool IsActionPopupVisible
+    {
+        get => isActionPopupVisible;
+        private set
+        {
+            if (isActionPopupVisible == value) return;
+            isActionPopupVisible = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether each action shows its progress percentage and progress bar.
+    /// Actions with no progress reporter move from 0% to 100% when they finish.
+    /// </summary>
+    public bool IsShowProgress
+    {
+        get => isShowProgress;
+        set
+        {
+            if (isShowProgress == value) return;
+            isShowProgress = value;
+            OnPropertyChanged();
+        }
+    }
 
     /// <summary>
     /// Gets whether an action set is currently being executed.
@@ -147,7 +247,7 @@ public partial class LoadingView : ContentView, IDisposable
     }
 
     /// <summary>
-    /// Gets or sets whether the action description is displayed below the animation.
+    /// Gets or sets whether action descriptions and their progress are displayed below the animation.
     /// </summary>
     public bool ShowStatus
     {
@@ -159,6 +259,7 @@ public partial class LoadingView : ContentView, IDisposable
             showStatus = value;
 
             OnPropertyChanged(nameof(IsStatusVisible));
+            OnPropertyChanged(nameof(AnimationRowSpacing));
         }
     }
 
@@ -208,9 +309,16 @@ public partial class LoadingView : ContentView, IDisposable
     public bool IsStatusVisible => ShowStatus;
 
     /// <summary>
-    /// Gets the foreground color used by the status caption.
+    /// Gets the spacing reserved between the animation and its caption.
     /// </summary>
-    public Color StatusColor => MessageAgentResources.GetColor(MessageAgentColorKeys.LoadingForeground);
+    public double AnimationRowSpacing => ShowStatus ? 8d : 0d;
+
+    /// <summary>
+    /// Gets the foreground color used by the status caption, adapted to the active theme.
+    /// </summary>
+    public Color StatusColor => MessageColorPalette.GetThemeColor(
+        MessageAgentResources.DialogSecondaryForegroundLightKey,
+        MessageAgentResources.DialogSecondaryForegroundDarkKey);
 
     /// <summary>
     /// Identifies the view hosted beneath the loading overlay.
@@ -232,6 +340,7 @@ public partial class LoadingView : ContentView, IDisposable
         Animation.PropertyChanged += AnimationOnPropertyChanged;
         Animation.AnimationLoaded += AnimationOnLoaded;
         SizeChanged += LoadingViewOnSizeChanged;
+        AnimationHost.SizeChanged += AnimationHostOnSizeChanged;
     }
 
     /// <summary>
@@ -325,12 +434,49 @@ public partial class LoadingView : ContentView, IDisposable
     /// <param name="animations">Optional animations; one is selected randomly for each execution.</param>
     /// <param name="executionMode">Parallel by default, or sequential.</param>
     /// <param name="cancellationToken">An external cancellation token.</param>
+    /// <param name="maxVisibleTasks">The maximum number of action rows displayed before the overflow list is used. Defaults to two.</param>
+    /// <param name="sortProgress">The sort order shared by the visible and expanded action lists. Defaults to Process.</param>
     /// <returns>The operation status, measured duration, and any exception.</returns>
     public Task<LoadingResult> ExecuteAsync(
         IEnumerable<LoadingAction> actions,
         IEnumerable<LoadingAnimation>? animations = null,
         LoadingExecutionMode executionMode = LoadingExecutionMode.Parallel,
-        CancellationToken cancellationToken = default) => RunAsync(actions, animations, executionMode, cancellationToken);
+        CancellationToken cancellationToken = default,
+        int maxVisibleTasks = 2,
+        LoadingProgressSortMode sortProgress = LoadingProgressSortMode.Process)
+    {
+        MaxVisibleTasks = maxVisibleTasks;
+        SortProgress = sortProgress;
+
+        return RunAsync(actions, animations, executionMode, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes an action set and optionally displays per-action progress.
+    /// </summary>
+    /// <param name="actions">The actions to execute.</param>
+    /// <param name="isShowProgress">Whether each action displays its progress.</param>
+    /// <param name="animations">Optional animations; one is selected randomly for each execution.</param>
+    /// <param name="executionMode">Parallel by default, or sequential.</param>
+    /// <param name="cancellationToken">An external cancellation token.</param>
+    /// <param name="maxVisibleTasks">The maximum number of action rows displayed before the overflow list is used. Defaults to two.</param>
+    /// <param name="sortProgress">The sort order shared by the visible and expanded action lists. Defaults to Process.</param>
+    /// <returns>The operation status, measured duration, and any exception.</returns>
+    public Task<LoadingResult> ExecuteAsync(
+        IEnumerable<LoadingAction> actions,
+        bool isShowProgress,
+        IEnumerable<LoadingAnimation>? animations = null,
+        LoadingExecutionMode executionMode = LoadingExecutionMode.Parallel,
+        CancellationToken cancellationToken = default,
+        int maxVisibleTasks = 2,
+        LoadingProgressSortMode sortProgress = LoadingProgressSortMode.Process)
+    {
+        IsShowProgress = isShowProgress;
+        MaxVisibleTasks = maxVisibleTasks;
+        SortProgress = sortProgress;
+
+        return RunAsync(actions, animations, executionMode, cancellationToken);
+    }
 
     /// <summary>
     /// Executes an action set using one specified animation.
@@ -339,14 +485,50 @@ public partial class LoadingView : ContentView, IDisposable
     /// <param name="animation">The animation to display.</param>
     /// <param name="executionMode">Parallel by default, or sequential.</param>
     /// <param name="cancellationToken">An external cancellation token.</param>
+    /// <param name="maxVisibleTasks">The maximum number of action rows displayed before the overflow list is used. Defaults to two.</param>
+    /// <param name="sortProgress">The sort order shared by the visible and expanded action lists. Defaults to Process.</param>
     /// <returns>The operation status, measured duration, and any exception.</returns>
     public Task<LoadingResult> ExecuteAsync(
         IEnumerable<LoadingAction> actions,
         LoadingAnimation animation,
         LoadingExecutionMode executionMode = LoadingExecutionMode.Parallel,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int maxVisibleTasks = 2,
+        LoadingProgressSortMode sortProgress = LoadingProgressSortMode.Process)
     {
         ArgumentNullException.ThrowIfNull(animation);
+
+        MaxVisibleTasks = maxVisibleTasks;
+        SortProgress = sortProgress;
+
+        return RunAsync(actions, new[] { animation }, executionMode, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes an action set with one specified animation and optional per-action progress.
+    /// </summary>
+    /// <param name="actions">The actions to execute.</param>
+    /// <param name="animation">The animation to display.</param>
+    /// <param name="isShowProgress">Whether each action displays its progress.</param>
+    /// <param name="executionMode">Parallel by default, or sequential.</param>
+    /// <param name="cancellationToken">An external cancellation token.</param>
+    /// <param name="maxVisibleTasks">The maximum number of action rows displayed before the overflow list is used. Defaults to two.</param>
+    /// <param name="sortProgress">The sort order shared by the visible and expanded action lists. Defaults to Process.</param>
+    /// <returns>The operation status, measured duration, and any exception.</returns>
+    public Task<LoadingResult> ExecuteAsync(
+        IEnumerable<LoadingAction> actions,
+        LoadingAnimation animation,
+        bool isShowProgress,
+        LoadingExecutionMode executionMode = LoadingExecutionMode.Parallel,
+        CancellationToken cancellationToken = default,
+        int maxVisibleTasks = 2,
+        LoadingProgressSortMode sortProgress = LoadingProgressSortMode.Process)
+    {
+        ArgumentNullException.ThrowIfNull(animation);
+
+        IsShowProgress = isShowProgress;
+        MaxVisibleTasks = maxVisibleTasks;
+        SortProgress = sortProgress;
 
         return RunAsync(actions, new[] { animation }, executionMode, cancellationToken);
     }
@@ -380,6 +562,10 @@ public partial class LoadingView : ContentView, IDisposable
         if (work.Length == 0) throw new ArgumentException("At least one action is required.", nameof(actions));
         if (executionSource is not null) throw new InvalidOperationException("This LoadingView is already executing an action set.");
 
+        LoadingActionState[] states = work
+            .Select((action, index) => new LoadingActionState(action.Description, IsShowProgress, index))
+            .ToArray();
+
         LoadingAnimation[] choices = animations?.ToArray() ?? Array.Empty<LoadingAnimation>();
         LoadingAnimation selected = choices.Length == 0 ? CreateDefaultAnimation() : choices[Random.Shared.Next(choices.Length)];
 
@@ -397,20 +583,37 @@ public partial class LoadingView : ContentView, IDisposable
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
                 IsRunning = true;
-                IsVisible = true;
+                IsActionPopupVisible = false;
 
+                foreach (LoadingActionState previousState in ActionStates)
+                    previousState.PropertyChanged -= ActionStateOnPropertyChanged;
+
+                ActionStates.Clear();
+                sortedActionStates.Clear();
+                visibleActionStates.Clear();
+                sortProgressBuckets.Clear();
+                isActionListRefreshQueued = false;
+
+                for (int index = 0; index < states.Length; index++)
+                {
+                    LoadingActionState state = states[index];
+                    sortProgressBuckets[state] = 0;
+                    state.PropertyChanged += ActionStateOnPropertyChanged;
+
+                    if (executionMode == LoadingExecutionMode.Parallel || index == 0)
+                        state.MarkRunning();
+
+                    ActionStates.Add(state);
+                }
+
+                currentActionDescription = executionMode == LoadingExecutionMode.Parallel
+                    ? string.Join(" · ", states.Select(state => state.Description))
+                    : states[0].Description;
+
+                RefreshActionLists();
+                HideHostedButtonText();
                 DisableHostedVisualTree();
-
-                StatusLabel.Text = string.Join(" · ", work.Select(action => action.Description)
-                                                        .Where(description => !string.IsNullOrWhiteSpace(description)));
-
-                if (string.IsNullOrWhiteSpace(StatusLabel.Text)) StatusLabel.Text = "Loading...";
-
-                currentActionDescription = StatusLabel.Text;
-
                 ToolTipHelper.SetText(Animation, currentActionDescription);
-
-                StatusLabel.IsVisible = ShowStatus;
                 OverlayLayer.BackgroundColor = OverlayColor;
                 LoadingPanel.BackgroundColor = SurfaceColor;
                 LoadingPanel.Stroke = SurfaceStrokeColor;
@@ -422,45 +625,75 @@ public partial class LoadingView : ContentView, IDisposable
 
             await ConfigureAnimationAsync(selected, linked.Token);
 
-            if (executionMode == LoadingExecutionMode.Sequential) await ExecuteSequentialAsync(work, linked);
-            else await ExecuteParallelAsync(work, linked);
+            if (executionMode == LoadingExecutionMode.Sequential)
+            {
+                failure = await ExecuteSequentialAsync(work, states, linked.Token);
+            }
+            else
+            {
+                Exception[] errors = await ExecuteParallelAsync(work, states, linked.Token);
+                if (errors.Length == 1) failure = errors[0];
+                else if (errors.Length > 1) failure = new AggregateException(errors);
 
-            linked.Token.ThrowIfCancellationRequested();
+                await Task.Delay(350);
+            }
 
-            Status = LoadingStatus.Completed;
+            cancelled = linked.IsCancellationRequested;
+
+            Status = failure is not null
+                ? LoadingStatus.Failed
+                : cancelled 
+                    ? LoadingStatus.Cancelled 
+                    : LoadingStatus.Completed;
         }
         catch (OperationCanceledException) when (linked.IsCancellationRequested)
         {
             cancelled = true;
-
             Status = LoadingStatus.Cancelled;
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                foreach (LoadingActionState state in states)
+                {
+                    if (state.Status is LoadingActionStatus.Pending or LoadingActionStatus.Running) state.MarkCancelled();
+                }
+            });
         }
         catch (Exception exception)
         {
             failure = exception;
-
-            linked.Cancel();
-
             Status = LoadingStatus.Failed;
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                foreach (LoadingActionState state in states)
+                {
+                    if (state.Status is LoadingActionStatus.Pending or LoadingActionStatus.Running)
+                        state.MarkFailed(exception);
+                }
+
+                if (executionMode == LoadingExecutionMode.Sequential && ActionStates.Count == 0 && states.Length > 0) ActionStates.Add(states[0]);
+            });
         }
         finally
         {
-            cancelled |= linked.IsCancellationRequested && failure is null;
-
             stopwatch.Stop();
-
             lastExecutionTime = stopwatch.Elapsed;
 
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
                 RestoreExternalAnimationView();
+
                 Animation.Stop();
+
                 ToolTipHelper.SetText(Animation, null);
+
                 RestoreHostedVisualTree();
+                RestoreHostedButtonText();
+
+                IsActionPopupVisible = false;
 
                 IsRunning = false;
-                IsVisible = false;
-                StatusLabel.IsVisible = ShowStatus;
 
                 OnPropertyChanged(nameof(LastExecutionTime));
             });
@@ -468,9 +701,143 @@ public partial class LoadingView : ContentView, IDisposable
             if (ReferenceEquals(executionSource, linked)) executionSource = null;
         }
 
-        if (cancelled && failure is null) Status = LoadingStatus.Cancelled;
-
         return new LoadingResult(Status, lastExecutionTime, failure);
+    }
+
+    private void ShowAllTasksOnClicked(object? sender, EventArgs e) => IsActionPopupVisible = true;
+
+    private void CloseAllTasksOnClicked(object? sender, EventArgs e) => IsActionPopupVisible = false;
+
+    private void ActionStateOnPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (sender is not LoadingActionState state) return;
+        if (e.PropertyName == nameof(LoadingActionState.Progress))
+        {
+            if (SortProgress != LoadingProgressSortMode.Process) return;
+
+            int bucket = (int)Math.Floor(state.Progress * 20d);
+
+            if (sortProgressBuckets.TryGetValue(state, out int previousBucket) && previousBucket == bucket) return;
+
+            sortProgressBuckets[state] = bucket;
+
+            QueueActionListRefresh();
+
+            return;
+        }
+
+        if (e.PropertyName is nameof(LoadingActionState.Status) or nameof(LoadingActionState.FinishedAt)) QueueActionListRefresh();
+    }
+
+    private void QueueActionListRefresh()
+    {
+        if (isActionListRefreshQueued) return;
+
+        isActionListRefreshQueued = true;
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            isActionListRefreshQueued = false;
+
+            RefreshActionLists();
+        });
+    }
+
+    private void RefreshActionLists()
+    {
+        IEnumerable<LoadingActionState> ordered = SortProgress switch
+        {
+            LoadingProgressSortMode.Access => ActionStates
+                .OrderBy(state => state.Status switch
+                {
+                    LoadingActionStatus.Completed => 0,
+                    LoadingActionStatus.Failed => 1,
+                    _ => 2
+                })
+                .ThenBy(state =>
+                state.Status is LoadingActionStatus.Completed or LoadingActionStatus.Failed
+                    ? state.FinishedAt ?? DateTimeOffset.MaxValue
+                    : DateTimeOffset.MaxValue)
+                .ThenByDescending(state => state.Progress)
+                .ThenBy(state => ActionStatusPriority(state.Status))
+                .ThenBy(state => state.Sequence),
+            LoadingProgressSortMode.Error => ActionStates
+                .OrderBy(state => state.Status switch
+                {
+                    LoadingActionStatus.Failed => 0,
+                    LoadingActionStatus.Completed => 1,
+                    _ => 2
+                })
+                .ThenBy(state => state.Status is LoadingActionStatus.Completed or LoadingActionStatus.Failed
+                    ? state.FinishedAt ?? DateTimeOffset.MaxValue
+                    : DateTimeOffset.MaxValue)
+                .ThenByDescending(state => state.Progress)
+                .ThenBy(state => ActionStatusPriority(state.Status))
+                .ThenBy(state => state.Sequence),
+            LoadingProgressSortMode.Process => ActionStates
+                .OrderBy(state => state.Status == LoadingActionStatus.Completed ? 1 : 0)
+                .ThenByDescending(state => state.Status == LoadingActionStatus.Completed ? 0d : state.Progress)
+                .ThenBy(state => state.Status == LoadingActionStatus.Completed
+                    ? state.FinishedAt ?? DateTimeOffset.MaxValue
+                    : DateTimeOffset.MaxValue)
+                .ThenBy(state => ActionStatusPriority(state.Status))
+                .ThenBy(state => state.Sequence),
+            _ => ActionStates.OrderBy(state => state.Sequence)
+        };
+
+        LoadingActionState[] all = ordered.ToArray();
+
+        ReplaceActionCollection(sortedActionStates, all);
+        ReplaceActionCollection(visibleActionStates, all.Take(MaxVisibleTasks));
+
+        OnPropertyChanged(nameof(HasOverflowActions));
+    }
+
+    private static int ActionStatusPriority(LoadingActionStatus status) => status switch
+    {
+        LoadingActionStatus.Running => 0,
+        LoadingActionStatus.Pending => 1,
+        LoadingActionStatus.Failed => 2,
+        LoadingActionStatus.Cancelled => 3,
+        LoadingActionStatus.Completed => 4,
+        _ => 5
+    };
+
+    private static void ReplaceActionCollection(ObservableCollection<LoadingActionState> target, IEnumerable<LoadingActionState> source)
+    {
+        LoadingActionState[] items = source.ToArray();
+
+        for (int desiredIndex = 0; desiredIndex < items.Length; desiredIndex++)
+        {
+            LoadingActionState desired = items[desiredIndex];
+
+            if (desiredIndex < target.Count && ReferenceEquals(target[desiredIndex], desired)) continue;
+
+            int existingIndex = target.IndexOf(desired);
+
+            if (existingIndex >= 0) target.Move(existingIndex, desiredIndex);
+            else target.Insert(desiredIndex, desired);
+        }
+
+        while (target.Count > items.Length) target.RemoveAt(target.Count - 1);
+    }
+
+    private void HideHostedButtonText()
+    {
+        if (ShowStatus || originalContent is not Button button) return;
+
+        hostedButton = button;
+        originalButtonText = button.Text;
+        button.Text = string.Empty;
+    }
+
+    private void RestoreHostedButtonText()
+    {
+        if (hostedButton is null) return;
+
+        hostedButton.Text = originalButtonText;
+        hostedButton = null;
+        originalButtonText = null;
     }
 
     private static LoadingView AttachCore(Func<View?> getContent, Action<View?> setContent, Func<Action, Action> subscribeCancel)
@@ -500,49 +867,108 @@ public partial class LoadingView : ContentView, IDisposable
         return loading;
     }
 
-    private async Task ExecuteSequentialAsync(LoadingAction[] actions, CancellationTokenSource source)
+    private async Task<Exception?> ExecuteSequentialAsync(
+        LoadingAction[] actions,
+        LoadingActionState[] states,
+        CancellationToken cancellationToken)
     {
-        foreach (LoadingAction action in actions)
+        for (int index = 0; index < actions.Length; index++)
         {
-            source.Token.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
+
+            LoadingAction action = actions[index];
+            LoadingActionState state = states[index];
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                state.MarkRunning();
+
+                currentActionDescription = state.Description;
+                ToolTipHelper.SetText(Animation, currentActionDescription);
+            });
 
             try
             {
-                await action.Execute(source.Token);
-
-                source.Token.ThrowIfCancellationRequested();
+                await action.ExecuteAsync(new LoadingActionProgress(state), cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                await MainThread.InvokeOnMainThreadAsync(state.MarkCompleted);
+                await Task.Delay(240, cancellationToken);
             }
-            catch
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                source.Cancel();
-
+                await MainThread.InvokeOnMainThreadAsync(state.MarkCancelled);
                 throw;
             }
+            catch (Exception exception)
+            {
+                await MainThread.InvokeOnMainThreadAsync(() => state.MarkFailed(exception));
+
+                if (action.OnError is not null)
+                {
+                    try
+                    {
+                        await action.OnError(exception);
+                    }
+                    catch (Exception handlerException)
+                    {
+                        exception = new AggregateException(exception, handlerException);
+                    }
+                }
+
+                await Task.Delay(400);
+
+                return exception;
+            }
         }
+
+        return null;
     }
 
-    private async Task ExecuteParallelAsync(LoadingAction[] actions, CancellationTokenSource source)
+    private async Task<Exception[]> ExecuteParallelAsync(
+        LoadingAction[] actions,
+        LoadingActionState[] states,
+        CancellationToken cancellationToken)
     {
-        async Task RunOneAsync(LoadingAction action)
+        async Task<Exception?> RunOneAsync(LoadingAction action, LoadingActionState state)
         {
             try
             {
-                source.Token.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
+                await action.ExecuteAsync(new LoadingActionProgress(state), cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                await MainThread.InvokeOnMainThreadAsync(state.MarkCompleted);
 
-                await action.Execute(source.Token);
-
-                source.Token.ThrowIfCancellationRequested();
+                return null;
             }
-            catch
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                source.Cancel();
+                await MainThread.InvokeOnMainThreadAsync(state.MarkCancelled);
 
-                throw;
+                return null;
+            }
+            catch (Exception exception)
+            {
+                await MainThread.InvokeOnMainThreadAsync(() => state.MarkFailed(exception));
+
+                if (action.OnError is null) return exception;
+
+                try
+                {
+                    await action.OnError(exception);
+                }
+                catch (Exception handlerException)
+                {
+                    return new AggregateException(exception, handlerException);
+                }
+
+                return exception;
             }
         }
 
-        await Task.WhenAll(actions.Select(RunOneAsync));
-    }
+        Exception?[] results = await Task.WhenAll(actions.Select((action, index) => RunOneAsync(action, states[index])));
+
+        return results.Where(exception => exception is not null).Cast<Exception>().ToArray();
+    } 
 
     private async Task ConfigureAnimationAsync(LoadingAnimation selected, CancellationToken cancellationToken)
     {
@@ -570,12 +996,14 @@ public partial class LoadingView : ContentView, IDisposable
             if (!string.IsNullOrWhiteSpace(externalJson))
             {
                 externalAccent = selected.AccentColor ?? externalJson.GetDominantColor(externalView.Progress) ?? externalAccent;
+
                 animationAspectRatio = externalJson.GetCompositionAspectRatio();
             }
 
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
                 RestoreExternalAnimationView();
+
                 AnimationHost.Children.Remove(Animation);
 
                 activeExternalView = externalView;
@@ -583,6 +1011,10 @@ public partial class LoadingView : ContentView, IDisposable
                 externalPreviousIsLooping = externalView.IsLooping;
                 externalPreviousWidth = externalView.WidthRequest;
                 externalPreviousHeight = externalView.HeightRequest;
+                externalPreviousScale = externalView.Scale;
+                externalPreviousHorizontalOptions = externalView.HorizontalOptions;
+                externalPreviousVerticalOptions = externalView.VerticalOptions;
+                externalPreviousMargin = externalView.Margin;
                 externalPreviousToolTip = ToolTipProperties.GetText(externalView)?.ToString();
                 restoreAnimationView = CaptureAndDetachParent(externalView);
 
@@ -663,7 +1095,7 @@ public partial class LoadingView : ContentView, IDisposable
 
     private void ApplyAnimationAspectRatio()
     {
-        if (Width <= 0 || Height <= 0 || animationAspectRatio <= 0) return;
+        if (animationAspectRatio <= 0) return;
 
         FitAnimation(Animation);
     }
@@ -674,20 +1106,44 @@ public partial class LoadingView : ContentView, IDisposable
         else ApplyAnimationAspectRatio();
     }
 
+    private void AnimationHostOnSizeChanged(object? sender, EventArgs e)
+    {
+        if (activeExternalView is not null) FitAnimation(activeExternalView);
+        else ApplyAnimationAspectRatio();
+    }
+
     private void FitAnimation(LottieView view)
     {
-        if (Width <= 0 || Height <= 0) return;
+        double availableWidth = AnimationHost.Width > 0 ? AnimationHost.Width : Width;
+        double availableHeight = AnimationHost.Height > 0 ? AnimationHost.Height : Height;
 
-        double horizontalInset = OverlayPadding.Left + OverlayPadding.Right + SurfacePadding.Left + SurfacePadding.Right;
-        double verticalInset = OverlayPadding.Top + OverlayPadding.Bottom + SurfacePadding.Top + SurfacePadding.Bottom;
+        if (availableWidth <= 0 || availableHeight <= 0 || animationAspectRatio <= 0) return;
 
-        if (ShowStatus) verticalInset += Math.Max(StatusLabel.Height, 24d) + AnimationHost.RowSpacing;
+        double maxWidth;
+        double maxHeight;
 
-        double maxWidth = Math.Max(1d, Math.Min(Width - horizontalInset - 2d, 320d));
-        double maxHeight = Math.Max(1d, Math.Min(Height - verticalInset - 2d, 300d));
-        double fittedWidth = Math.Min(maxWidth, maxHeight * animationAspectRatio);
+        bool isButtonHost = originalContent is Button && !ShowStatus;
 
-        FitAnimation(view, fittedWidth, fittedWidth / animationAspectRatio);
+        if (isButtonHost)
+        {
+            maxHeight = Math.Max(1d, Math.Min(availableHeight - 2d, 64d));
+            maxWidth = Math.Max(1d, availableWidth - 8d);
+        }
+        else
+        {
+            maxWidth = Math.Max(1d, Math.Min(availableWidth - 4d, 320d));
+            maxHeight = Math.Max(1d, Math.Min(availableHeight - 4d, 300d));
+        }
+
+        view.HorizontalOptions = LayoutOptions.Center;
+        view.VerticalOptions = LayoutOptions.Center;
+        view.Margin = Thickness.Zero;
+        view.Scale = isButtonHost ? 1.5d : 1d;
+
+        double fittedHeight = Math.Min(maxHeight, maxWidth / animationAspectRatio);
+        double fittedWidth = fittedHeight * animationAspectRatio;
+
+        FitAnimation(view, fittedWidth, fittedHeight);
     }
 
     private static void FitAnimation(LottieView view, double width, double height)
@@ -748,6 +1204,10 @@ public partial class LoadingView : ContentView, IDisposable
         activeExternalView.IsLooping = externalPreviousIsLooping;
         activeExternalView.WidthRequest = externalPreviousWidth;
         activeExternalView.HeightRequest = externalPreviousHeight;
+        activeExternalView.Scale = externalPreviousScale;
+        activeExternalView.HorizontalOptions = externalPreviousHorizontalOptions;
+        activeExternalView.VerticalOptions = externalPreviousVerticalOptions;
+        activeExternalView.Margin = externalPreviousMargin;
 
         Action? restore = restoreAnimationView;
 
@@ -826,6 +1286,10 @@ public partial class LoadingView : ContentView, IDisposable
         Cancel();
         RestoreExternalAnimationView();
         RestoreHostedVisualTree();
+        RestoreHostedButtonText();
+        IsActionPopupVisible = false;
+
+        foreach (LoadingActionState state in ActionStates) state.PropertyChanged -= ActionStateOnPropertyChanged;
 
         Action? restore = restoreHost;
 
@@ -835,6 +1299,7 @@ public partial class LoadingView : ContentView, IDisposable
         else HostContent = null;
 
         SizeChanged -= LoadingViewOnSizeChanged;
+        AnimationHost.SizeChanged -= AnimationHostOnSizeChanged;
         Animation.PropertyChanged -= AnimationOnPropertyChanged;
         Animation.AnimationLoaded -= AnimationOnLoaded;
     }

@@ -6,7 +6,7 @@ namespace MessageAgent.Core.Enums.Loading;
 public enum LoadingExecutionMode
 {
     /// <summary>
-    /// Runs all actions concurrently and cancels remaining work when one fails.
+    /// Runs all actions concurrently; individual failures do not cancel the other actions.
     /// </summary>
     Parallel,
     /// <summary>
